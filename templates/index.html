@@ -8,39 +8,67 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
     <link href="https://cdn.datatables.net/2.0.3/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256' viewBox='0 0 32 32'><path fill='%2380bc00' d='M12.447 12.265v-1.674q.244-.018.494-.026c4.577-.143 7.581 3.934 7.581 3.934S17.278 19 13.8 19a4.2 4.2 0 0 1-1.353-.217v-5.071c1.782.215 2.14 1 3.212 2.788l2.383-2.009a6.3 6.3 0 0 0-4.672-2.281a9 9 0 0 0-.923.055m0-5.529v2.5q.246-.02.494-.03c6.366-.214 10.513 5.221 10.513 5.221s-4.764 5.792-9.726 5.792a7.4 7.4 0 0 1-1.281-.112v1.545a9 9 0 0 0 1.067.069c4.618 0 7.958-2.358 11.192-5.15c.535.43 2.731 1.474 3.182 1.932c-3.075 2.574-10.241 4.649-14.3 4.649c-.392 0-.769-.024-1.138-.06v2.172H30V6.736Zm0 12.051v1.32c-4.271-.762-5.457-5.2-5.457-5.2a9.23 9.23 0 0 1 5.457-2.64v1.447h-.006a4.1 4.1 0 0 0-3.184 1.456s.782 2.811 3.19 3.62m-7.586-4.077a10.58 10.58 0 0 1 7.586-4.122V9.236C6.848 9.685 2 14.427 2 14.427s2.746 7.939 10.447 8.665v-1.44c-5.647-.711-7.586-6.939-7.586-6.939'/></svg>">
     <style>
-        /* 细微调整，防止数字变化时卡片抖动 */
         .gpu-card-val { font-variant-numeric: tabular-nums; }
         .card-footer .col-3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        /* 添加到你的 <style> 标签中 */
-.progress-subtle {
-    height: 6px;
-    background-color: rgba(255,255,255,0.15);
-    border-radius: 3px;
-    margin-top: 4px;
-}
+        .progress-subtle {
+            height: 6px;
+            background-color: rgba(255,255,255,0.15);
+            border-radius: 3px;
+            margin-top: 4px;
+        }
+        /* 拖拽相关样式 */
+        .cursor-move { cursor: move; color: #adb5bd; }
+        .cursor-move:hover { color: #495057; }
+        .sortable-ghost { opacity: 0.4; background-color: #e9ecef; }
+
+        /* 按钮微调 */
+        .btn-icon-only {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        .btn-icon-only:hover {
+            background-color: rgba(255,255,255,0.2);
+            transform: rotate(90deg);
+        }
     </style>
 </head>
 
 <body class="bg-dark">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary">
-        <div class="container ">
-            <a class="navbar-brand" href="#" style="padding-left: 20px"><b>GPU</b> Monitor  </a>
-            <div class="d-flex align-items-center gap-3 text-white small">
-                <span id="connection-status" class="badge bg-secondary">Connecting...</span>
-                <div id="update-timestamp">Waiting for data...</div>
+    <nav class="navbar navbar-expand navbar-dark bg-dark border-bottom border-secondary sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 32 32" class="me-2">
+                    <path fill="#80bc00" d="M12.447 12.265v-1.674q.244-.018.494-.026c4.577-.143 7.581 3.934 7.581 3.934S17.278 19 13.8 19a4.2 4.2 0 0 1-1.353-.217v-5.071c1.782.215 2.14 1 3.212 2.788l2.383-2.009a6.3 6.3 0 0 0-4.672-2.281a9 9 0 0 0-.923.055m0-5.529v2.5q.246-.02.494-.03c6.366-.214 10.513 5.221 10.513 5.221s-4.764 5.792-9.726 5.792a7.4 7.4 0 0 1-1.281-.112v1.545a9 9 0 0 0 1.067.069c4.618 0 7.958-2.358 11.192-5.15c.535.43 2.731 1.474 3.182 1.932c-3.075 2.574-10.241 4.649-14.3 4.649c-.392 0-.769-.024-1.138-.06v2.172H30V6.736Zm0 12.051v1.32c-4.271-.762-5.457-5.2-5.457-5.2a9.23 9.23 0 0 1 5.457-2.64v1.447h-.006a4.1 4.1 0 0 0-3.184 1.456s.782 2.811 3.19 3.62m-7.586-4.077a10.58 10.58 0 0 1 7.586-4.122V9.236C6.848 9.685 2 14.427 2 14.427s2.746 7.939 10.447 8.665v-1.44c-5.647-.711-7.586-6.939-7.586-6.939"></path>
+                </svg>
+                <b>GPU</b>&nbsp;Monitor
+            </a>
+
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3 text-white small">
+                    <span id="connection-status" class="badge bg-secondary">Connecting...</span>
+                    <div id="update-timestamp" class="text-white-50">Waiting...</div>
+                </div>
+
+                <button class="btn btn-outline-light btn-icon-only border-0" data-bs-toggle="modal" data-bs-target="#settingsModal" title="Settings">
+                    <i class="fas fa-cog fa-lg"></i>
+                </button>
             </div>
         </div>
     </nav>
 
     <div class="container py-4">
-        <!-- GPU Cards Container -->
-        <div class="row" id="gpu-cards-container">
-            <!-- Cards will be injected here by JS -->
-        </div>
+        <div class="row" id="gpu-cards-container"></div>
 
-        <!-- GPU Stat Table -->
         <div class="card mb-3">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
@@ -69,26 +97,83 @@
                 </div>
             </div>
         </div>
-        <!-- GPU Temperature Legend -->
+
         <div class="card mt-3 mb-4">
             <div class="card-body p-3">
                 <div class="d-flex align-items-center flex-wrap gap-3">
-                    <h6 class="card-title mb-0 me-2"><i class="fas fa-palette me-2"></i>GPU Temperature Legend:</h6>
+                    <h6 class="card-title mb-0 me-2"><i class="fas fa-palette me-2"></i>Legend:</h6>
                     <div class="d-flex flex-wrap gap-2">
-                        <span class="badge rounded-pill bg-danger px-2 py-1">Hot (>75°C)</span>
-                        <span class="badge rounded-pill bg-warning text-dark px-2 py-1">Warm (50-75°C)</span>
-                        <span class="badge rounded-pill bg-success px-2 py-1">Normal (25-50°C)</span>
-                        <span class="badge rounded-pill bg-primary px-2 py-1">Cool (<25°C)</span>
+                        <span class="badge rounded-pill bg-danger">Hot (>75°C)</span>
+                        <span class="badge rounded-pill bg-warning text-dark">Warm (50-75°C)</span>
+                        <span class="badge rounded-pill bg-success">Normal</span>
+                        <span class="badge rounded-pill bg-primary">Cool</span>
+                        <span class="badge rounded-pill bg-secondary">Offline / Error</span>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <footer class="py-4 bg-dark">
-            <div class="container text-center">
-                        <small><a href="https://github.com/3355190239/GPU-Monitor" class="text-white" style="text-decoration: none"><i class="fab fa-github"></i> YuanZ/GPU Monitor | 2025</a></small>
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title text-dark"><i class="fas fa-server me-2"></i>Server Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-dark">
+
+                    <div class="card bg-light border-0 mb-4 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3 text-primary">Add New Server</h6>
+                            <form id="add-server-form" class="row g-2">
+                                <div class="col-md-3">
+                                    <label class="form-label small text-muted mb-1">Hostname / IP</label>
+                                    <input type="text" class="form-control" id="new-host" placeholder="192.168.1.x" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small text-muted mb-1">Port</label>
+                                    <input type="number" class="form-control" id="new-port" value="22" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small text-muted mb-1">Username</label>
+                                    <input type="text" class="form-control" id="new-user" placeholder="root" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small text-muted mb-1">Password</label>
+                                    <input type="password" class="form-control" id="new-pass" placeholder="Password" required>
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-plus"></i></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                        <h6 class="mb-0 text-dark">Managed Servers List</h6>
+                        <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Drag <i class="fas fa-bars mx-1"></i> to reorder</small>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px"></th> <th>Hostname</th>
+                                    <th>Port</th>
+                                    <th>Username</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="server-list-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
-        </footer>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -100,37 +185,29 @@
         let dataTable;
         let isRefreshEnabled = true;
         let refreshTimeout;
-        const REFRESH_RATE = 3000; // 3秒
+        const REFRESH_RATE = 3000;
+        let sortableInstance = null; // Sortable 实例
 
         document.addEventListener('DOMContentLoaded', function () {
-            // 1. 初始化 DataTable
+            // ... (DataTable 初始化保持不变) ...
             dataTable = new DataTable('#dataTable', {
-                paging: true,        // 改回 true，开启分页
-                pageLength: 25,      // 默认每页显示 10 条
-                lengthChange: true,  // 开启左上角的“每页显示X条”下拉框
-                searching: true,
-                info: true,          // 改回 true，开启左下角的“Showing x to x of x”
+                paging: true, pageLength: 25, lengthChange: true, searching: true, info: true,
                 order: [[0, 'asc'], [1, 'asc']],
                 columnDefs: [
                     { className: 'small align-middle', targets: '_all' },
-                    { width: '10%', targets: 0 },
-                    { width: '15%', targets: 1 }, // Device
-                    { width: '10%', targets: 2 },
-                    { width: '10%', targets: 3 },
-                    { width: '10%', targets: 4 }, // Memory
-                    { width: '10%', targets: 5 },  // Power
-                    { width: '35%', targets: 6 },
+                    { width: '10%', targets: 0 }, { width: '15%', targets: 1 }, { width: '10%', targets: 2 },
+                    { width: '10%', targets: 3 }, { width: '10%', targets: 4 }, { width: '10%', targets: 5 }, { width: '35%', targets: 6 },
                 ]
             });
 
-            // 2. 绑定暂停按钮
+            // Refresh Toggle
             const toggleBtn = document.getElementById('toggle-refresh');
             toggleBtn.addEventListener('click', function () {
                 isRefreshEnabled = !isRefreshEnabled;
                 if (isRefreshEnabled) {
                     toggleBtn.innerHTML = '<i class="fas fa-pause me-1"></i> Pause';
                     toggleBtn.classList.replace('btn-outline-danger', 'btn-outline-primary');
-                    fetchData(); // 立即恢复
+                    fetchData();
                 } else {
                     toggleBtn.innerHTML = '<i class="fas fa-play me-1"></i> Resume';
                     toggleBtn.classList.replace('btn-outline-primary', 'btn-outline-danger');
@@ -138,302 +215,305 @@
                 }
             });
 
-            // 3. 开始第一次抓取
+            // Settings Modal Events
+            const settingsModal = document.getElementById('settingsModal');
+            settingsModal.addEventListener('show.bs.modal', loadSettings);
+
+            document.getElementById('add-server-form').addEventListener('submit', async function(e){
+                e.preventDefault();
+                await addServer();
+            });
+
             fetchData();
         });
 
-        // === 核心轮询逻辑 ===
+        // === Settings Logic ===
+        async function loadSettings() {
+            const tbody = document.getElementById('server-list-body');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>';
+
+            try {
+                const res = await fetch('/api/admin/servers');
+                const servers = await res.json();
+
+                tbody.innerHTML = '';
+                if(servers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No servers. Add one above.</td></tr>';
+                    return;
+                }
+
+                servers.forEach(s => {
+                    const row = `
+                        <tr data-host="${s.hostname}">
+                            <td class="text-center"><i class="fas fa-bars cursor-move handle"></i></td>
+                            <td class="fw-bold">${s.hostname}</td>
+                            <td>${s.port}</td>
+                            <td><span class="badge bg-secondary text-light">${s.username}</span></td>
+                            <td class="text-end">
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteServer('${s.hostname}')">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                });
+
+                // 初始化拖拽 (确保只初始化一次)
+                if(!sortableInstance) {
+                    sortableInstance = new Sortable(tbody, {
+                        handle: '.handle', // 只能拖拽手柄
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        onEnd: async function () {
+                            // 拖拽结束后，获取新的顺序并保存
+                            await saveOrder();
+                        }
+                    });
+                }
+
+            } catch(e) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-danger">Error: ${e}</td></tr>`;
+            }
+        }
+
+        async function saveOrder() {
+            // 获取当前表格中所有行的 hostname 顺序
+            const rows = document.querySelectorAll('#server-list-body tr');
+            const newOrder = Array.from(rows).map(row => row.getAttribute('data-host')).filter(h => h);
+
+            try {
+                await fetch('/api/admin/servers/reorder', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(newOrder)
+                });
+                // 排序保存后，后端内存已更新，下一次轮询 fetchData 会自动拿到新顺序的数据
+                // 我们可以在这里手动触发一次 fetchData 让界面立即响应
+                fetchData();
+            } catch(e) {
+                console.error("Save order failed", e);
+                alert("Failed to save sort order");
+            }
+        }
+
+        async function addServer() {
+            const btn = document.querySelector('#add-server-form button');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            const payload = {
+                hostname: document.getElementById('new-host').value.trim(),
+                port: document.getElementById('new-port').value,
+                username: document.getElementById('new-user').value.trim(),
+                password: document.getElementById('new-pass').value
+            };
+
+            try {
+                const res = await fetch('/api/admin/servers', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                if(res.ok) {
+                    document.getElementById('add-server-form').reset();
+                    loadSettings();
+                } else {
+                    const data = await res.json();
+                    alert('Error: ' + (data.error || 'Unknown'));
+                }
+            } catch(e) { alert('Connection error'); }
+            finally { btn.disabled = false; btn.innerHTML = originalHtml; }
+        }
+
+        async function deleteServer(hostname) {
+            if(!confirm(`Delete ${hostname}?`)) return;
+            try {
+                await fetch('/api/admin/servers', {
+                    method: 'DELETE',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({hostname: hostname})
+                });
+                loadSettings();
+            } catch(e) { alert('Error deleting'); }
+        }
+
+        // === Monitoring Logic ===
         async function fetchData() {
             const statusBadge = document.getElementById('connection-status');
-
             try {
                 const response = await fetch('/api/gpustat/all');
                 if (!response.ok) throw new Error("Server Error");
-
                 const data = await response.json();
 
-                // 更新界面
                 updateCards(data);
                 updateTable(data);
 
-                // 更新状态栏
                 const now = new Date();
                 document.getElementById('update-timestamp').textContent = now.toLocaleTimeString();
                 statusBadge.className = 'badge bg-success';
                 statusBadge.textContent = 'Connected';
-
             } catch (error) {
-                console.error("Fetch failed:", error);
                 statusBadge.className = 'badge bg-danger';
                 statusBadge.textContent = 'Disconnected';
             } finally {
-                // 只有当开关开启时，才注册下一次轮询 (递归调用)
                 if (isRefreshEnabled) {
                     refreshTimeout = setTimeout(fetchData, REFRESH_RATE);
                 }
             }
         }
 
-        // === 卡片更新逻辑 (Diff 更新，不重绘) ===
-        // function updateCards(gpustats) {
-        //     const container = document.getElementById('gpu-cards-container');
+        function updateCards(gpustats) {
+            const container = document.getElementById('gpu-cards-container');
+            const activeCardIds = new Set();
 
-        //     // 用一个 Set 记录本次更新存在的卡片 ID，用于后续清理掉线的机器
-        //     const activeCardIds = new Set();
+            if(!gpustats || gpustats.length === 0) return;
 
-        //     gpustats.forEach(node => {
-        //         node.gpus.forEach(gpu => {
-        //             // 生成唯一 ID: nodeName-gpuIndex
-        //             // 简单的清理特殊字符防止 ID 非法
-        //             const safeHost = node.hostname.replace(/[^a-zA-Z0-9]/g, '');
-        //             const cardId = `card-${safeHost}-${gpu.index}`;
-        //             activeCardIds.add(cardId);
-
-        //             let cardEl = document.getElementById(cardId);
-
-        //             // 计算颜色
-        //             const temp = gpu['temperature.gpu'];
-        //             let colorClass = 'bg-primary'; // Cool
-        //             if (temp > 75) colorClass = 'bg-danger';     // Hot
-        //             else if (temp > 50) colorClass = 'bg-warning'; // Warm
-        //             else if (temp > 25) colorClass = 'bg-success'; // Normal
-
-        //             // 如果是 connection error
-        //             if (node.error || gpu.index === "Err") colorClass = 'bg-secondary';
-
-        //             // tooltip 内容
-        //             const tooltipContent = `
-        //                 <div class='text-start small'>
-        //                     <strong>Node:</strong> ${node.hostname}<br>
-        //                     <strong>Device:</strong> ${gpu.name} [${gpu.index}]<br>
-        //                     <strong>Processes:</strong><br>${gpu['user_processes'] || 'None'}
-        //                 </div>
-        //             `;
-
-        //             if (!cardEl) {
-        //                 // === 创建新卡片 ===
-        //                 const html = `
-        //                 <div class="col-xl-3 col-md-4 col-sm-6 mb-3 fade-in-card" id="${cardId}">
-        //                     <div class="card text-white ${colorClass} h-100 shadow-sm">
-        //                         <div class="card-body pb-2">
-        //                             <div class="d-flex justify-content-between align-items-center mb-2">
-        //                                 <div class="fw-bold"><i class="fas fa-server me-1"></i> ${node.hostname}</div>
-        //                                 <span class="badge bg-dark bg-opacity-25 gpu-index">#${gpu.index}</span>
-        //                             </div>
-        //                             <div class="small text-truncate mb-2" title="${gpu.name}">${gpu.name}</div>
-        //                             <div class="d-flex justify-content-between small">
-        //                                 <span>Power: <span class="gpu-power fw-bold">${gpu['power.draw']}</span>/${gpu['enforced.power.limit']}W</span>
-        //                             </div>
-        //                         </div>
-        //                         <div class="card-footer text-white small bg-black bg-opacity-10 border-0">
-        //                             <div class="row text-center g-1">
-        //                                 <div class="col-3" title="Temp">
-        //                                     <i class="fas fa-thermometer-half"></i> <span class="gpu-temp fw-bold">${gpu['temperature.gpu']}</span>°C
-        //                                 </div>
-        //                                 <div class="col-3" title="Memory">
-        //                                     <i class="fas fa-memory"></i> <span class="gpu-mem fw-bold">${gpu.memory}</span>%
-        //                                 </div>
-        //                                 <div class="col-3" title="Util">
-        //                                     <i class="fas fa-tachometer-alt"></i> <span class="gpu-util fw-bold">${gpu['utilization.gpu']}</span>%
-        //                                 </div>
-        //                                 <div class="col-3" title="Users">
-        //                                     <i class="fas fa-users"></i> <span class="gpu-users fw-bold">${gpu.users}</span>
-        //                                 </div>
-        //                             </div>
-        //                         </div>
-        //                     </div>
-        //                 </div>`;
-        //                 container.insertAdjacentHTML('beforeend', html);
-        //                 cardEl = document.getElementById(cardId); // 获取刚插入的元素引用
-
-        //                 // 初始化 Tooltip
-        //                 new bootstrap.Tooltip(cardEl.querySelector('.card'), {
-        //                     html: true,
-        //                     title: tooltipContent
-        //                 });
-
-        //             } else {
-        //                 // === 更新现有卡片 ===
-        //                 const cardInner = cardEl.querySelector('.card');
-
-        //                 // 1. 更新背景色 (如果变了)
-        //                 // 移除旧的 bg-* 类，添加新的
-        //                 cardInner.className = cardInner.className.replace(/bg-(primary|success|warning|danger|secondary)/, colorClass);
-
-        //                 // 2. 更新文本数值
-        //                 cardEl.querySelector('.gpu-power').textContent = gpu['power.draw'];
-        //                 cardEl.querySelector('.gpu-temp').textContent = gpu['temperature.gpu'];
-        //                 cardEl.querySelector('.gpu-mem').textContent = gpu.memory;
-        //                 cardEl.querySelector('.gpu-util').textContent = gpu['utilization.gpu'];
-        //                 cardEl.querySelector('.gpu-users').textContent = gpu.users;
-
-        //                 // 3. 更新 Tooltip (Bootstrap 5 方式)
-        //                 const tooltip = bootstrap.Tooltip.getInstance(cardInner);
-        //                 if(tooltip) {
-        //                     tooltip.setContent({ '.tooltip-inner': tooltipContent });
-        //                 }
-        //             }
-        //         });
-        //     });
-        // === 卡片更新逻辑 (修改版：中间显示显存条，底部显示功耗) ===
-        
-function updateCards(gpustats) {
-    const container = document.getElementById('gpu-cards-container');
-    const activeCardIds = new Set();
-
-    gpustats.forEach(node => {
-        node.gpus.forEach(gpu => {
-            const safeHost = node.hostname.replace(/[^a-zA-Z0-9]/g, '');
-            const cardId = `card-${safeHost}-${gpu.index}`;
-            activeCardIds.add(cardId);
-
-            let cardEl = document.getElementById(cardId);
-
-            // 1. 计算颜色状态 (保持原版逻辑)
-            const temp = gpu['temperature.gpu'];
-            let colorClass = 'bg-primary'; // Cool
-            if (temp > 75) colorClass = 'bg-danger';     // Hot
-            else if (temp > 50) colorClass = 'bg-warning'; // Warm
-            else if (temp > 25) colorClass = 'bg-success'; // Normal
-            if (node.error || gpu.index === "Err") colorClass = 'bg-secondary';
-
-            // 2. 准备数据
-            const memUsedGB = (gpu['memory.used'] / 1024).toFixed(1); // 假设单位是MB转GB
-            const memTotalGB = (gpu['memory.total'] / 1024).toFixed(0);
-            const memPercent = gpu.memory; // 百分比
-
-            // Tooltip 内容
-            const tooltipContent = `
-                <div class='text-start small'>
-                    <strong>Node:</strong> ${node.hostname}<br>
-                    <strong>Device:</strong> ${gpu.name} [${gpu.index}]<br>
-                    <strong>Processes:</strong><br>${gpu['user_processes'] || 'None'}
-                </div>
-            `;
-
-            if (!cardEl) {
-                // === 创建新卡片 ===
-                const html = `
-                <div class="col-xl-3 col-md-4 col-sm-6 mb-3 fade-in-card" id="${cardId}">
-                    <div class="card text-white ${colorClass} h-100 shadow-sm">
-                        <div class="card-body pb-2">
-                            <!-- 头部：主机名 & GPU ID -->
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="fw-bold"><i class="fas fa-server me-1"></i> ${node.hostname}</div>
-                                <span class="badge bg-dark bg-opacity-25 gpu-index">${gpu.index}</span>
-                            </div>
-                            <div class="small text-truncate mb-3" title="${gpu.name}">${gpu.name}</div>
-                            
-                            <!-- 修改部分：这里原本是 Power，现在改为 Memory 进度条 -->
-                            <div class="d-flex justify-content-between small">
-                                <span>Memory</span>
-                                <span class="gpu-mem-text opacity-75">${memUsedGB}/${memTotalGB} GB</span>
-                            </div>
-                            <div class="progress progress-subtle">
-                                <div class="progress-bar bg-light" role="progressbar" style="width: ${memPercent}%"></div>
-                            </div>
-                            <!-- 
-                            <div class="d-flex justify-content-between small">
-                                <span>Power: <span class="gpu-power fw-bold">${gpu['power.draw']}</span>/${gpu['enforced.power.limit']}W</span>
-                            </div> -->
-                        </div>
-
-                        <!-- 底部：4个格子 (把原本的 Mem 改成了 Power) -->
-                        <div class="card-footer text-white small bg-black bg-opacity-10 border-0">
-                            <div class="row text-center g-1">
-                                <div class="col-3" title="Temp">
-                                    <i class="fas fa-thermometer-half"></i> <span class="gpu-temp fw-bold">${gpu['temperature.gpu']}</span>°
-                                </div>
-                                <div class="col-3" title="Power (Draw/Limit)">
-                                    <!-- 这里的图标改成闪电，类名改成 gpu-power -->
-                                    <i class="fas fa-bolt"></i> <span class="gpu-power fw-bold">${gpu['power.draw']}</span>W
-                                </div>
-                                <div class="col-3" title="Util">
-                                    <i class="fas fa-tachometer-alt"></i> <span class="gpu-util fw-bold">${gpu['utilization.gpu']}</span>%
-                                </div>
-                                <div class="col-3" title="Users">
-                                    <i class="fas fa-users"></i> <span class="gpu-users fw-bold">${gpu.users}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-                
-                container.insertAdjacentHTML('beforeend', html);
-                cardEl = document.getElementById(cardId);
-                
-                // 初始化 Tooltip
-                new bootstrap.Tooltip(cardEl.querySelector('.card'), {
-                    html: true,
-                    title: tooltipContent
-                });
-
-            } else {
-                // === 更新现有卡片 (Diff Update) ===
-                const cardInner = cardEl.querySelector('.card');
-                
-                // 1. 更新背景色
-                cardInner.className = cardInner.className.replace(/bg-(primary|success|warning|danger|secondary)/, colorClass);
-
-                // 2. 更新显存进度条和文字 (New)
-                const progressBar = cardEl.querySelector('.progress-bar');
-                progressBar.style.width = `${memPercent}%`;
-                cardEl.querySelector('.gpu-mem-text').textContent = `${memUsedGB}/${memTotalGB} GB`;
-
-                // 3. 更新底部数据 (注意：现在第二个格子是 Power)
-                cardEl.querySelector('.gpu-temp').textContent = gpu['temperature.gpu'];
-                cardEl.querySelector('.gpu-power').textContent = gpu['power.draw']; // 更新功耗
-                cardEl.querySelector('.gpu-util').textContent = gpu['utilization.gpu'];
-                cardEl.querySelector('.gpu-users').textContent = gpu.users;
-
-                // 4. 更新 Tooltip
-                const tooltip = bootstrap.Tooltip.getInstance(cardInner);
-                if(tooltip) {
-                    tooltip.setContent({ '.tooltip-inner': tooltipContent });
-                }
-            }
-        });
-    });
-
-    // 清理掉线卡片
-    Array.from(container.children).forEach(child => {
-        if (!activeCardIds.has(child.id)) {
-            child.remove();
-        }
-    });
-}
-
-
-
-        // === 表格更新逻辑 (保持状态) ===
-        function updateTable(gpustats) {
-            // 准备新数据
-            const newData = [];
             gpustats.forEach(node => {
-                node.gpus.forEach(gpu => {
-                    newData.push([
-                        node.hostname,
-                        `[${gpu.index}] ${gpu.name}`,
-                        `${gpu['temperature.gpu']}°C`,
-                        `<div class="progress" style="height: 20px; position: relative;">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: ${gpu['utilization.gpu']}%"></div>
-                            <span style="position: absolute; width: 100%; text-align: center; color: black; font-size: 0.8rem; line-height: 20px;">${gpu['utilization.gpu']}%</span>
-                        </div>`,
-                        `${gpu.memory}% <span class="text-muted small">(${gpu['memory.used']}/${gpu['memory.total']})</span>`,
-                        `${gpu['power.draw']} / ${gpu['enforced.power.limit']} W`,
-                        `<span class="text-truncate d-block" style="max-width: 400px;" title="${gpu['user_processes']}">${gpu['user_processes']}</span>`
-                    ]);
+                // IMPORTANT: 
+                // 如果节点有 error 但是没有 gpus 数据（通常是SSH连不上），
+                // 我们伪造一个 "Err" GPU 来显示卡片，否则这个节点会直接消失。
+                let gpusToRender = node.gpus || [];
+                if (gpusToRender.length === 0 && node.error) {
+                    gpusToRender = [{
+                        index: "Err",
+                        name: node.error, // 将错误信息显示在显卡名称的位置
+                        'temperature.gpu': '-',
+                        'utilization.gpu': '-',
+                        'power.draw': '-',
+                        'memory.used': 0,
+                        'memory.total': 0,
+                        memory: 0,
+                        users: 'Connection Error'
+                    }];
+                }
+
+                gpusToRender.forEach(gpu => {
+                    const safeHost = node.hostname.replace(/[^a-zA-Z0-9]/g, '');
+                    const cardId = `card-${safeHost}-${gpu.index}`;
+                    activeCardIds.add(cardId);
+
+                    let cardEl = document.getElementById(cardId);
+
+                    // ... (颜色和数据处理逻辑) ...
+                    const temp = gpu['temperature.gpu'];
+                    let colorClass = 'bg-primary';
+                    if (temp !== '-') {
+                        if (temp > 75) colorClass = 'bg-danger';
+                        else if (temp > 50) colorClass = 'bg-warning';
+                        else if (temp > 25) colorClass = 'bg-success';
+                    }
+                    
+                    // 如果是错误状态，强制灰色
+                    if (node.error || gpu.index === "Err") colorClass = 'bg-secondary';
+                    
+                    const memUsedGB = gpu['memory.used'] ? (gpu['memory.used'] / 1024).toFixed(1) : 0;
+                    const memTotalGB = gpu['memory.total'] ? (gpu['memory.total'] / 1024).toFixed(0) : 0;
+                    const memPercent = gpu.memory || 0;
+
+                    const tooltipContent = `
+                        <div class='text-start small'>
+                            <strong>Node:</strong> ${node.hostname}<br>
+                            <strong>Device:</strong> ${gpu.name} [${gpu.index}]<br>
+                            <strong>Info:</strong><br>${gpu['user_processes'] || gpu.users || 'None'}
+                        </div>
+                    `;
+
+                    if (!cardEl) {
+                        const html = `
+                        <div class="col-xl-3 col-md-4 col-sm-6 mb-3 fade-in-card" id="${cardId}">
+                            <div class="card text-white ${colorClass} h-100 shadow-sm">
+                                <div class="card-body pb-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="fw-bold"><i class="fas fa-server me-1"></i> ${node.hostname}</div>
+                                        <span class="badge bg-dark bg-opacity-25 gpu-index">${gpu.index}</span>
+                                    </div>
+                                    <div class="small text-truncate mb-3" title="${gpu.name}">${gpu.name}</div>
+                                    <div class="d-flex justify-content-between small">
+                                        <span>Memory</span>
+                                        <span class="gpu-mem-text opacity-75">${memUsedGB}/${memTotalGB} GB</span>
+                                    </div>
+                                    <div class="progress progress-subtle">
+                                        <div class="progress-bar bg-light" role="progressbar" style="width: ${memPercent}%"></div>
+                                    </div>
+                                </div>
+                                <div class="card-footer text-white small bg-black bg-opacity-10 border-0">
+                                    <div class="row text-center g-1">
+                                        <div class="col-3" title="Temp"><i class="fas fa-thermometer-half"></i> <span class="gpu-temp fw-bold">${gpu['temperature.gpu']}</span>°</div>
+                                        <div class="col-3" title="Power"><i class="fas fa-bolt"></i> <span class="gpu-power fw-bold">${gpu['power.draw']}</span>W</div>
+                                        <div class="col-3" title="Util"><i class="fas fa-tachometer-alt"></i> <span class="gpu-util fw-bold">${gpu['utilization.gpu']}</span>%</div>
+                                        <div class="col-3" title="Users"><i class="fas fa-users"></i> <span class="gpu-users fw-bold">${gpu.users}</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                        container.insertAdjacentHTML('beforeend', html);
+                        cardEl = document.getElementById(cardId);
+                        new bootstrap.Tooltip(cardEl.querySelector('.card'), { html: true, title: tooltipContent });
+                    } else {
+                        // 更新已有数据
+                        const cardInner = cardEl.querySelector('.card');
+                        cardInner.className = cardInner.className.replace(/bg-(primary|success|warning|danger|secondary)/, colorClass);
+                        cardEl.querySelector('.progress-bar').style.width = `${memPercent}%`;
+                        cardEl.querySelector('.gpu-mem-text').textContent = `${memUsedGB}/${memTotalGB} GB`;
+                        cardEl.querySelector('.gpu-temp').textContent = gpu['temperature.gpu'];
+                        cardEl.querySelector('.gpu-power').textContent = gpu['power.draw'];
+                        cardEl.querySelector('.gpu-util').textContent = gpu['utilization.gpu'];
+                        cardEl.querySelector('.gpu-users').textContent = gpu.users;
+                        
+                        // 错误状态下更新名字以显示错误信息
+                        if(gpu.index === "Err") {
+                             cardEl.querySelector('.text-truncate').textContent = gpu.name;
+                             cardEl.querySelector('.text-truncate').title = gpu.name;
+                        }
+
+                        const tooltip = bootstrap.Tooltip.getInstance(cardInner);
+                        if(tooltip) tooltip.setContent({ '.tooltip-inner': tooltipContent });
+                    }
+
+                    // 强制排序
+                    container.appendChild(cardEl);
                 });
             });
 
-            // DataTables 优化更新：
-            // 只有当行数不一致，或者用户不在交互时，才全量重绘比较简单。
-            // 但为了“不改代码”的初衷，我们使用 clear + add + draw(false)
-            // draw(false) 是关键，它保持了分页位置。
+            // 清理旧卡片
+            Array.from(container.children).forEach(child => {
+                if (!activeCardIds.has(child.id)) child.remove();
+            });
+        }
 
+        function updateTable(gpustats) {
+             const newData = [];
+            gpustats.forEach(node => {
+                if(node.gpus && node.gpus.length > 0) {
+                    node.gpus.forEach(gpu => {
+                        newData.push([
+                            node.hostname,
+                            `[${gpu.index}] ${gpu.name}`,
+                            `${gpu['temperature.gpu']}°C`,
+                            `<div class="progress" style="height: 20px; position: relative;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: ${gpu['utilization.gpu']}%"></div>
+                                <span style="position: absolute; width: 100%; text-align: center; color: black; font-size: 0.8rem; line-height: 20px;">${gpu['utilization.gpu']}%</span>
+                            </div>`,
+                            `${gpu.memory}% <span class="text-muted small">(${gpu['memory.used']}/${gpu['memory.total']})</span>`,
+                            `${gpu['power.draw']} / ${gpu['enforced.power.limit']} W`,
+                            `<span class="text-truncate d-block" style="max-width: 400px;" title="${gpu['user_processes']}">${gpu['user_processes']}</span>`
+                        ]);
+                    });
+                } else if (node.error) {
+                    // 表格也显示错误行
+                     newData.push([
+                        node.hostname,
+                        `<span class="text-danger"><i class="fas fa-exclamation-triangle"></i> Error</span>`,
+                        '-', '-', '-', '-',
+                        `<span class="text-danger small">${node.error}</span>`
+                    ]);
+                }
+            });
             dataTable.clear();
             dataTable.rows.add(newData);
-            dataTable.draw(false); 
+            dataTable.draw(false);
         }
     </script>
 </body>
