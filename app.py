@@ -309,6 +309,41 @@ def add_server():
     return jsonify({"success": True})
 
 
+@app.route('/api/admin/servers/bulk', methods=['POST'])
+def add_servers_bulk():
+    data = request.json
+    if not isinstance(data, dict) or 'servers' not in data or not isinstance(data['servers'], list):
+        return jsonify({"error": "Invalid payload"}), 400
+
+    added = 0
+    skipped = []
+    invalid_count = 0
+    with SERVERS_LOCK:
+        existing_hosts = {s['hostname'] for s in SERVERS}
+        for server in data['servers']:
+            if not isinstance(server, dict):
+                invalid_count += 1
+                continue
+            if not all(k in server for k in ['hostname', 'port', 'username', 'password']):
+                invalid_count += 1
+                continue
+            hostname = server['hostname']
+            if hostname in existing_hosts:
+                skipped.append(hostname)
+                continue
+            existing_hosts.add(hostname)
+            SERVERS.append({
+                'hostname': hostname,
+                'port': server['port'],
+                'username': server['username'],
+                'password': server['password']
+            })
+            added += 1
+
+    save_config()
+    return jsonify({"success": True, "added": added, "skipped": skipped, "invalid": invalid_count})
+
+
 @app.route('/api/admin/servers', methods=['DELETE'])
 def delete_server():
     data = request.json
