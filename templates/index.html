@@ -150,6 +150,16 @@
                         </div>
                     </div>
 
+                    <div class="card bg-light border-0 mb-4 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3 text-primary">Batch Add Servers</h6>
+                            <div class="mb-2 small text-muted">Paste one server per line in the format: <code>hostname,port,username,password</code></div>
+                            <textarea id="bulk-servers-textarea" class="form-control" rows="4" placeholder="192.168.1.10,22,root,secretpass\n192.168.1.11,22,root,secretpass"></textarea>
+                            <div class="form-text">Lines without 4 comma-separated values will be ignored. Existing hostnames are skipped.</div>
+                            <button id="bulk-add-btn" class="btn btn-primary mt-3">Add Servers</button>
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
                         <h6 class="mb-0 text-dark">Managed Servers List</h6>
                         <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Drag <i class="fas fa-bars mx-1"></i> to reorder</small>
@@ -222,6 +232,10 @@
             document.getElementById('add-server-form').addEventListener('submit', async function(e){
                 e.preventDefault();
                 await addServer();
+            });
+
+            document.getElementById('bulk-add-btn').addEventListener('click', async function () {
+                await addServersBulk();
             });
 
             fetchData();
@@ -325,6 +339,63 @@
                 }
             } catch(e) { alert('Connection error'); }
             finally { btn.disabled = false; btn.innerHTML = originalHtml; }
+        }
+
+        async function addServersBulk() {
+            const btn = document.getElementById('bulk-add-btn');
+            const originalHtml = btn.innerHTML;
+            const textarea = document.getElementById('bulk-servers-textarea');
+            const rawLines = textarea.value.trim().split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+            if (rawLines.length === 0) {
+                alert('请先输入要添加的服务器。');
+                return;
+            }
+
+            const servers = [];
+            rawLines.forEach((line, index) => {
+                const parts = line.split(',').map(part => part.trim());
+                if (parts.length !== 4) return;
+                const [hostname, port, username, password] = parts;
+                if (hostname && port && username && password) {
+                    servers.push({ hostname, port, username, password });
+                }
+            });
+
+            if (servers.length === 0) {
+                alert('未找到有效的服务器行，请确保每行格式为 hostname,port,username,password。');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+
+            try {
+                const res = await fetch('/api/admin/servers/bulk', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ servers })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    let message = `成功添加 ${data.added} 台服务器。`;
+                    if (data.skipped && data.skipped.length) {
+                        message += `\n已跳过重复主机: ${data.skipped.join(', ')}`;
+                    }
+                    if (data.invalid) {
+                        message += `\n无效条目: ${data.invalid}`;
+                    }
+                    alert(message);
+                    textarea.value = '';
+                    loadSettings();
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown'));
+                }
+            } catch (e) {
+                alert('Connection error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
         }
 
         async function deleteServer(hostname) {
