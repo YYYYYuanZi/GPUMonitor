@@ -1,18 +1,15 @@
+哎呀，你说得对，光加了部署文档忘了写进更新日志了！细节决定成败，感谢提醒。
+
+我已经把 Docker 发布的记录加上了（日期写了今天），下面是最终完整版的 README，你可以直接整个复制替换：
+
+---
+
 # GPU Monitor (Agentless SSH 版)
 
 > **服务器集群监控面板 / 课题组显卡状态看板 / 轻量级 GPU 监控系统**
->
 > **A lightweight, agentless GPU cluster monitoring dashboard for Labs & Servers.**
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-3.8%2B-green)
-![BasedOn](https://img.shields.io/badge/based%20on-gpuview-orange)
-
 ## 📸 截图预览
-
-<img width="1872" height="924" alt="Dashboard Preview" src="https://github.com/user-attachments/assets/35c8db4a-afbb-4219-b486-a4277c3d365e" />
-
-<img width="1872" height="924" alt="Management Preview" src="https://github.com/user-attachments/assets/0645425f-8deb-426c-9277-ee321c39688c" />
 
 ## 📖 项目简介 (Introduction)
 
@@ -25,16 +22,21 @@
 本项目基于 **[fgaim/gpuview](https://github.com/fgaim/gpuview)** 进行深度二次开发。感谢原作者提供了优秀的 UI 概念。
 
 **核心重构与优化点 (Key Features):**
+
 1. **架构进化 (Agentless)**: 从原版的“每台机器必装 Agent”升级为 **SSH 直连模式**。被监控端只需有 NVIDIA 驱动并开启 SSH 即可。
-2. **后端高并发优化**: 
-   * 引入 **SSH 连接池** 与 Keep-Alive 机制，避免频繁建立连接的开销。
-   * 采用 **后台独立线程轮询 (ThreadPoolExecutor)**，限制最大并发数（默认 5），防止触发防火墙拦截或 SSH 拥堵，同时实现 API 毫秒级无感响应。
-   * 合并 `nvidia-smi` 显卡与进程指令，单次会话拉取全部数据。
+2. **后端高并发优化**:
+* 引入 **SSH 连接池** 与 Keep-Alive 机制，避免频繁建立连接的开销。
+* 采用 **后台独立线程轮询 (ThreadPoolExecutor)**，限制最大并发数（默认 5），防止触发防火墙拦截或 SSH 拥堵，同时实现 API 毫秒级无感响应。
+* 合并 `nvidia-smi` 显卡与进程指令，单次会话拉取全部数据。
+
+
 3. **前端体验重制**: 全新深色模式 (Dark Mode)，优化数据刷新布局，彻底解决原版页面闪烁问题。
 4. **动态节点管理**: 支持在前端/API **动态添加、删除服务器、拖拽重排**，配置自动持久化。
 
 ## 📝 更新日志
-* 2026-05-23：新增“批量添加服务器”功能：在设置弹窗中可按行粘贴 `hostname,port,username,password`，一次性导入多台节点。
+
+* **2026-06-13**：新增 Docker 部署支持，发布官方镜像 `2686097353/gpumonitor`，免配环境一键运行。
+* **2026-05-23**：新增“批量添加服务器”功能：在设置弹窗中可按行粘贴 `hostname,port,username,password`，一次性导入多台节点。
 
 ---
 
@@ -48,10 +50,29 @@
 ---
 
 ## 🛠️ 安装与使用
-### 1. 克隆项目与安装依赖
+
+### 1. Docker 部署 (推荐)
+
+如果您习惯使用 Docker，可以直接拉取镜像并一键运行，免去环境配置的烦恼：
 
 ```bash
-git clone [https://github.com/3355190239/GPU-Monitor.git](https://github.com/3355190239/GPU-Monitor.git)
+# 从 Docker Hub 拉取最新镜像
+docker pull 2686097353/gpumonitor
+
+# 运行容器，将本地 8888 端口映射至容器的 8888 端口
+docker run -d -p 8888:8888 --name gpumonitor_app 2686097353/gpumonitor
+
+```
+
+> 🐳 **Docker Hub 仓库地址**: [2686097353/gpumonitor](https://hub.docker.com/repository/docker/2686097353/gpumonitor)
+> *启动后，在浏览器访问：[http://localhost:8888*](https://www.google.com/search?q=http://localhost:8888)
+
+### 2. 本地源码部署
+
+如果您需要进行二次开发或直接在宿主机运行：
+
+```bash
+git clone https://github.com/3355190239/GPU-Monitor.git
 cd GPU-Monitor
 
 # 推荐使用虚拟环境
@@ -65,4 +86,6 @@ pip install flask paramiko
 # 启动服务
 python app.py
 
-启动后，访问浏览器：http://localhost:8888
+```
+
+*启动后，在浏览器访问：[http://localhost:8888*](https://www.google.com/search?q=http://localhost:8888)
