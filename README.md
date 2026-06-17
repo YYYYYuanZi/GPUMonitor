@@ -9,6 +9,8 @@
 * **2026-05-23**：新增“批量添加服务器”功能：在设置弹窗中可按行粘贴 `hostname,port,username,password`，一次性导入多台节点。
 
 ## 📸 截图预览
+<img width="2940" height="1662" alt="image" src="https://github.com/user-attachments/assets/df3c6a3a-544e-40aa-ad4d-e7bf325acb3a" />
+<img width="2940" height="1662" alt="image" src="https://github.com/user-attachments/assets/bf889d8b-4a09-403d-9935-002f659ab54e" />
 
 ## 📖 项目简介 (Introduction)
 
