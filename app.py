@@ -104,9 +104,9 @@ def get_ssh_client(host_details):
                 port=int(host_details.get('port', 22)),
                 username=host_details['username'],
                 password=host_details['password'],
-                timeout=10,  # TCP socket 连接超时
-                banner_timeout=60,  # 增加 Banner 等待时间到 60s
-                auth_timeout=30,  # 认证超时
+                timeout=5,  # TCP socket 连接超时
+                banner_timeout=3,  # 增加 Banner 等待时间到 60s
+                auth_timeout=3,  # 认证超时
                 look_for_keys=False,  # 禁用私钥搜索
                 allow_agent=False  # 禁用 Agent
             )
