@@ -5,7 +5,7 @@
 
 ## 📝 更新日志
 
-* **2026-06-13**：新增 Docker 部署支持，发布官方镜像 `2686097353/gpumonitor`，免配环境一键运行。
+* **2026-06-13**：新增 Docker 部署支持，发布镜像 `yyyyyyyz/gpumonitor`，免配环境一键运行。
 * **2026-05-23**：新增“批量添加服务器”功能：在设置弹窗中可按行粘贴 `hostname,port,username,password`，一次性导入多台节点。
 
 ## 📸 截图预览
@@ -54,14 +54,28 @@
 
 ```bash
 # 从 Docker Hub 拉取最新镜像
-docker pull 2686097353/gpumonitor
+docker pull yyyyyyyz/gpumonitor:latest
 
 # 运行容器，将本地 8888 端口映射至容器的 8888 端口
-docker run -d -p 8888:8888 --name gpumonitor_app 2686097353/gpumonitor
+docker run -d \
+  --name gpumonitor \
+  --restart always \
+  -p 8888:8888 \
+  -e TZ=Asia/Shanghai \
+  yyyyyyyz/gpumonitor:latest
 
+# 使用 Docker Compose
+services:
+  gpumonitor:
+    container_name: gpumonitor
+    image: yyyyyyyz/gpumonitor:latest   # 或指定架构 :amd64/:arm64
+    restart: always
+    ports:
+      - "8888:8888"
+    environment:
+      - TZ=Asia/Shanghai
 ```
 
-> 🐳 **Docker Hub 仓库地址**: [2686097353/gpumonitor](https://hub.docker.com/repository/docker/2686097353/gpumonitor)
 > *启动后，在浏览器访问：[http://localhost:8888*](https://www.google.com/search?q=http://localhost:8888)
 
 ### 2. 本地源码部署
