@@ -91,7 +91,7 @@ def get_ssh_client(host_details):
 
     # 2. 建立新连接（在锁外部进行，避免阻塞其他线程，但写入时需要锁）
     # 重试机制：防止偶尔的网络抖动或 Banner 读取失败
-    retries = 3
+    retries = 1
     last_error = None
 
     for attempt in range(retries):
@@ -229,39 +229,28 @@ def fetch_single_server_data(host_details):
 
 
 def background_monitor_loop():
-    """后台线程：轮询采集所有服务器"""
     global GLOBAL_GPU_STATS
-    print("Starting background monitor thread...")
     while True:
         start_time = time.time()
-
         with SERVERS_LOCK:
             current_servers = list(SERVERS)
-
         if not current_servers:
             with CACHE_LOCK:
                 GLOBAL_GPU_STATS = []
-            time.sleep(2)
+            time.sleep(1)  # 无服务器时快速轮询
             continue
 
-        results = []
-        # === 关键修改：限制最大并发数为 5 ===
-        # 避免同时发起过多 SSH 连接导致被防火墙拦截或 Banner 读取失败
-        max_threads = min(5, len(current_servers))
-
-        # 如果服务器数量 > 0，才执行
+        max_threads = min(10, len(current_servers))  # 增加并发
         if max_threads > 0:
             with ThreadPoolExecutor(max_workers=max_threads) as executor:
-                futures = executor.map(fetch_single_server_data, current_servers)
-                results = list(futures)
+                results = list(executor.map(fetch_single_server_data, current_servers))
         else:
             results = []
-
         with CACHE_LOCK:
             GLOBAL_GPU_STATS = results
 
         elapsed = time.time() - start_time
-        sleep_time = max(1.0, 3.0 - elapsed)  # 稍微增加最小等待时间
+        sleep_time = max(0.5, 1.0 - elapsed)  # 目标间隔 1 秒
         time.sleep(sleep_time)
 
 
