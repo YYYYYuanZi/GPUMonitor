@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
@@ -26,7 +27,6 @@
         /* ===== GPU 卡片 ===== */
         #gpu-cards-container {
             min-height: 0;
-            /* ✅ 修复：与下方表格保持间距 */
             margin-bottom: 1.5rem;
         }
 
@@ -274,7 +274,6 @@
             color: #6c757d;
         }
 
-        /* ✅ 修复：用户快捷卡片的间距与服务器一致 */
         .user-free-gpu-card {
             width: 100%;
             display: block;
@@ -365,7 +364,6 @@
             transition: width 0.25s ease;
         }
 
-        /* ✅ 修复：用户条目之间增加间距，与服务器一致 */
         .user-shortcut-btn {
             width: 100%;
             margin-bottom: 5px;
@@ -474,6 +472,26 @@
 
         footer a:hover {
             color: #20c997 !important;
+        }
+
+        /* ===== 卡片高亮联动效果 ===== */
+        .gpu-card-highlight > .card {
+            /* 极高亮度、零灰度的纯正 LED 蓝 */
+            border-color: #0088ff !important; 
+            /* 拒绝发灰：叠加三层光晕！
+               第1层：100%不透明的实心蓝，彻底隔绝背景灰度
+               第2层：90%透明度的强光
+               第3层：大范围的柔和蓝光 */
+            box-shadow: 0 0 0 2px #0088ff, 
+                        0 0 12px rgba(0, 136, 255, 0.9), 
+                        0 0 25px rgba(0, 136, 255, 0.5) !important; 
+            transform: translateY(-4px);
+            z-index: 10; /* 保证悬停放大的卡片不会被旁边的卡片遮挡 */
+        }
+        
+        #gpu-cards-container .card {
+            /* 给所有 GPU 卡片添加平滑过渡动画 */
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
     </style>
 </head>
@@ -684,14 +702,6 @@
     </script>
 
     <script>
-        /* =========================================================
-                   优化说明：
-                   1. 修复用户快捷栏条目间距（.user-shortcut-btn 增加 margin-bottom:5px）
-                   2. 修复 GPU 卡片与表格间距（#gpu-cards-container 增加 margin-bottom:1.5rem）
-                   3. 精简 CSS：合并重复规则，减少冗余
-                   4. 精简 JS：使用箭头函数、模板字符串，合并重复逻辑
-                   ========================================================= */
-
         // ===== 全局变量 =====
         let dataTable = null;
         let isRefreshEnabled = true;
@@ -707,6 +717,23 @@
         const SHORTCUT_GAP = 14;
         const SHORTCUT_EDGE = 12;
         const SHORTCUT_MIN_SCREEN = 900;
+
+        // ===== 卡片高亮联动函数 =====
+        function highlightCards(keys) {
+            clearHighlights();
+            keys.forEach(function(key) {
+                const cardWrapper = gpuCardMap.get(key);
+                if (cardWrapper) {
+                    cardWrapper.classList.add('gpu-card-highlight');
+                }
+            });
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.gpu-card-highlight').forEach(function(el) {
+                el.classList.remove('gpu-card-highlight');
+            });
+        }
 
         // ===== 快捷栏位置自适应 =====
         function updateShortcutPositions() {
@@ -753,7 +780,6 @@
             updateShortcutPositions();
 
             // DataTable
-            // 在 DOMContentLoaded 中替换
             dataTable = new DataTable('#dataTable', {
                 paging: true,
                 pageLength: 25,
@@ -850,6 +876,14 @@
             allBtn.innerHTML =
                 `<i class="fas fa-layer-group"></i><span class="server-shortcut-name">All Servers</span><span class="server-status-dot all-status"></span>`;
             allBtn.title = 'Show all servers';
+            
+            // 为 All Servers 绑定 Hover 事件
+            allBtn.addEventListener('mouseenter', function() {
+                const allKeys = Array.from(gpuCardMap.keys());
+                highlightCards(allKeys);
+            });
+            allBtn.addEventListener('mouseleave', clearHighlights);
+
             allBtn.addEventListener('click', function () {
                 const changed = selectedServer !== null || selectedUser !== null;
                 selectedServer = null;
@@ -878,10 +912,19 @@
                 btn.innerHTML =
                     `<i class="fas fa-server"></i><span class="server-shortcut-name">${escapeHtml(hostname)}</span><span class="server-status-dot unknown" data-status-host="${escapeHtml(hostname)}"></span>`;
 
-                // ✅ 优化后的点击逻辑：再次点击已选中的服务器 = 取消选择
+                // 为单个服务器按钮绑定 Hover 事件
+                btn.addEventListener('mouseenter', function() {
+                    const serverKeys = [];
+                    for (const key of gpuCardMap.keys()) {
+                        if (key.startsWith(`${hostname}::`)) serverKeys.push(key);
+                    }
+                    highlightCards(serverKeys);
+                });
+                btn.addEventListener('mouseleave', clearHighlights);
+
                 btn.addEventListener('click', function () {
                     if (selectedServer === hostname && selectedUser === null) {
-                        selectedServer = null;      // 取消选择，回到 All Servers
+                        selectedServer = null;
                     } else {
                         selectedServer = hostname;
                         selectedUser = null;
@@ -955,16 +998,21 @@
             const raw = String(gpu.user_processes || gpu.users || '').trim();
             if (!raw || raw === 'None' || raw === '-') return [];
             const users = [];
-            // ✅ 修复：在正则表达式的分隔符匹配中加入了 \s (空格)，以支持空格分隔的多个用户
-            const matches = raw.matchAll(/(?:^|[\n;\s])\s*([A-Za-z_][A-Za-z0-9_.-]*)\s*\(/g);
+            
+            const matches = raw.matchAll(/([A-Za-z_][A-Za-z0-9_.-]*)\s*\(/g);
             for (const match of matches) {
                 if (!users.includes(match[1])) users.push(match[1]);
             }
+            
             if (users.length === 0) {
-                // ✅ 修复：fallback 拆分时同样考虑空格
-                const fallback = raw.split(/[\n;\s]/)[0].trim().split(/\s+/)[0];
-                if (/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(fallback)) users.push(fallback);
+                const parts = raw.split(/[\n;, \t]+/);
+                for (const part of parts) {
+                    if (part && /^[A-Za-z_][A-Za-z0-9_.-]*$/.test(part)) {
+                        if (!users.includes(part)) users.push(part);
+                    }
+                }
             }
+            
             return users;
         }
 
@@ -1045,6 +1093,20 @@
             freeCard.innerHTML =
                 `<div class="d-flex align-items-center justify-content-between gap-2"><span class="user-free-gpu-left"><i class="fas fa-circle-check"></i><span class="user-free-gpu-label">Free GPUs</span></span><span class="user-free-gpu-percent">${freePercent}%</span></div><div class="d-flex align-items-baseline justify-content-between mt-1"><span class="user-free-gpu-count">${freeGpuCount} / ${totalGpuCount}</span><span class="small opacity-75">available</span></div><div class="user-free-gpu-progress"><div class="user-free-gpu-progress-bar" style="width:${freePercent}%"></div></div>`;
             freeCard.title = `Show ${freeGpuCount} / ${totalGpuCount} available GPUs`;
+            
+            // 为 Free GPU 绑定 Hover 事件
+            const freeGpuKeys = [];
+            (data || []).forEach(function (node) {
+                const gpus = Array.isArray(node.gpus) ? node.gpus : [];
+                gpus.forEach(function (gpu) {
+                    if (extractGpuUsers(gpu).length === 0) {
+                        freeGpuKeys.push(`${node.hostname}::${gpu.index}`);
+                    }
+                });
+            });
+            freeCard.addEventListener('mouseenter', function() { highlightCards(freeGpuKeys); });
+            freeCard.addEventListener('mouseleave', clearHighlights);
+
             freeCard.addEventListener('click', function () {
                 if (selectedUser === '__FREE_GPUS__') {
                     selectedUser = null;
@@ -1086,6 +1148,12 @@
                 userBtn.innerHTML =
                     `<span class="user-shortcut-left"><i class="fas fa-user"></i><span class="user-shortcut-name">${escapeHtml(username)}</span></span><span class="user-gpu-count">${uniqueGpus.length} GPU${uniqueGpus.length > 1 ? 's' : ''}</span>`;
                 userBtn.title = `Show ${username} GPUs`;
+                
+                // 为单个用户绑定 Hover 事件
+                const userKeys = uniqueGpus.map(function(gpu) { return `${gpu.hostname}::${gpu.index}`; });
+                userBtn.addEventListener('mouseenter', function() { highlightCards(userKeys); });
+                userBtn.addEventListener('mouseleave', clearHighlights);
+
                 userBtn.addEventListener('click', function () {
                     if (selectedUser === username) {
                         selectedUser = null;
@@ -1123,10 +1191,10 @@
                 const raw = await response.json();
                 const data = normalizeNodes(raw);
 
-                // GPU Cards
+                // GPU Cards (传入全量数据和过滤后的数据)
                 try {
                     const displayData = applyGpuFilters(data);
-                    updateCards(displayData);
+                    updateCards(data, displayData);
                 } catch (e) { console.error('GPU Card update failed:', e); }
 
                 // 用户快捷栏
@@ -1159,13 +1227,27 @@
         }
 
         // ===== GPU Cards =====
-        function updateCards(gpustats) {
+        function updateCards(allData, displayData) {
             const container = document.getElementById('gpu-cards-container');
-            if (!container || !Array.isArray(gpustats)) return;
+            if (!container || !Array.isArray(allData)) return;
+
+            // 提前提取出需要显示的 key 集合
+            const visibleKeys = new Set();
+            (displayData || []).forEach(function (node) {
+                const hostname = String(node.hostname || 'Unknown');
+                let gpus = Array.isArray(node.gpus) ? node.gpus : [];
+                if (gpus.length === 0 && node.error) {
+                    visibleKeys.add(`${hostname}::Err`);
+                }
+                gpus.forEach(function (gpu) {
+                    visibleKeys.add(`${hostname}::${String(gpu.index || '')}`);
+                });
+            });
 
             const currentKeys = new Set();
+            let domIndex = 0; // 用来追踪 DOM 的确切顺序
 
-            gpustats.forEach(function (node) {
+            allData.forEach(function (node) {
                 if (!node) return;
                 const hostname = String(node.hostname || 'Unknown');
                 let gpus = Array.isArray(node.gpus) ? node.gpus : [];
@@ -1186,15 +1268,27 @@
 
                     let card = gpuCardMap.get(key);
                     if (!card) {
-                        card = createGpuCard(container, node, gpu, key);
-                        if (!card) return;
+                        card = createGpuCard(node, gpu, key);
                         gpuCardMap.set(key, card);
                     }
                     updateGpuCard(card, node, gpu);
+
+                    // 核心修复1：强制保证所有 DOM 的物理顺序不变（跟 allData 中的顺序严丝合缝）
+                    if (container.children[domIndex] !== card) {
+                        container.insertBefore(card, container.children[domIndex] || null);
+                    }
+                    domIndex++;
+
+                    // 核心修复2：通过隐藏/显示来实现筛选，而不是粗暴地移除 DOM
+                    if (visibleKeys.has(key)) {
+                        card.classList.remove('d-none');
+                    } else {
+                        card.classList.add('d-none');
+                    }
                 });
             });
 
-            // 删除不存在的
+            // 删除那些真的下线/不存在了的服务器卡片
             for (const [key, card] of gpuCardMap.entries()) {
                 if (!currentKeys.has(key)) {
                     disposeGpuCard(card);
@@ -1203,7 +1297,7 @@
             }
         }
 
-        function createGpuCard(container, node, gpu, key) {
+        function createGpuCard(node, gpu, key) {
             const temp = gpu['temperature.gpu'];
             const colorClass = getGpuColorClass(temp, node, gpu);
             const memUsedGB = getMemoryUsedGB(gpu);
@@ -1236,8 +1330,6 @@
                     </div>
                 </div>
             `;
-
-            container.appendChild(wrapper);
 
             const cardInner = wrapper.querySelector('.card');
             if (cardInner && typeof bootstrap !== 'undefined') {
