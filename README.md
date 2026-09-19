@@ -19,7 +19,7 @@
 
 ## 📸 截图预览
 
-<img width="2940" height="1662" alt="dashboard" src="https://github.com/user-attachments/assets/df3c6a3a-544e-40aa-ad4d-e7bf325acb3a" />
+<img width="3840" height="1907" alt="image" src="https://github.com/user-attachments/assets/34e7f9d9-a260-46cd-86b8-aa968a2f5a5a" />
 <img width="2940" height="1662" alt="settings" src="https://github.com/user-attachments/assets/bf889d8b-4a09-403d-9935-002f659ab54e" />
 
 ---
