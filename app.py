@@ -8,26 +8,23 @@ from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 
+
+
 # ================= 配置与全局变量 =================
-# 配置文件路径
 CONFIG_FILE = 'servers.json'
 
-# 全局服务器列表
 SERVERS = []
-SERVERS_LOCK = threading.Lock()  # 读写 SERVERS 列表时使用的锁
+SERVERS_LOCK = threading.Lock()
 
-# SSH 连接池
 SSH_CLIENTS = {}
 SSH_LOCK = threading.Lock()
 
-# 全局数据缓存
 GLOBAL_GPU_STATS = []
 CACHE_LOCK = threading.Lock()
 
 
 # ================= 持久化存储逻辑 =================
 def load_config():
-    """从 JSON 加载配置"""
     global SERVERS
     if not os.path.exists(CONFIG_FILE):
         try:
@@ -46,7 +43,6 @@ def load_config():
 
 
 def save_config():
-    """保存配置到 JSON"""
     with SERVERS_LOCK:
         try:
             with open(CONFIG_FILE, 'w') as f:
@@ -70,18 +66,14 @@ COMBINED_CMD = f"{CMD_GPU} ; echo '{SEPARATOR}' ; {CMD_PROC}"
 
 
 # ================= 核心逻辑 =================
-
 def get_ssh_client(host_details):
-    """获取或创建带有 Keep-Alive 的 SSH 连接 (带重试机制)"""
     hostname = host_details['hostname']
 
     with SSH_LOCK:
-        # 1. 尝试复用现有连接
         client = SSH_CLIENTS.get(hostname)
         if client and client.get_transport() and client.get_transport().is_active():
             return client
 
-        # 如果连接无效，先清理
         if hostname in SSH_CLIENTS:
             try:
                 SSH_CLIENTS[hostname].close()
@@ -89,8 +81,6 @@ def get_ssh_client(host_details):
                 pass
             SSH_CLIENTS.pop(hostname, None)
 
-    # 2. 建立新连接（在锁外部进行，避免阻塞其他线程，但写入时需要锁）
-    # 重试机制：防止偶尔的网络抖动或 Banner 读取失败
     retries = 1
     last_error = None
 
@@ -104,11 +94,11 @@ def get_ssh_client(host_details):
                 port=int(host_details.get('port', 22)),
                 username=host_details['username'],
                 password=host_details['password'],
-                timeout=5,  # TCP socket 连接超时
-                banner_timeout=3,  # 增加 Banner 等待时间到 60s
-                auth_timeout=3,  # 认证超时
-                look_for_keys=False,  # 禁用私钥搜索
-                allow_agent=False  # 禁用 Agent
+                timeout=5,
+                banner_timeout=3,
+                auth_timeout=3,
+                look_for_keys=False,
+                allow_agent=False
             )
             client.get_transport().set_keepalive(30)
 
@@ -122,15 +112,12 @@ def get_ssh_client(host_details):
                 client.close()
             except:
                 pass
-            # 失败后等待一小段时间再重试
             time.sleep(1 + attempt)
 
-            # 如果重试多次后依然失败
     raise last_error
 
 
 def fetch_single_server_data(host_details):
-    """采集单台服务器数据"""
     hostname = host_details['hostname']
     try:
         client = get_ssh_client(host_details)
@@ -222,7 +209,6 @@ def fetch_single_server_data(host_details):
         return {"hostname": hostname, "gpus": final_gpu_list}
 
     except Exception as e:
-        # 连接失败时，从缓存中移除，下次重试
         with SSH_LOCK:
             SSH_CLIENTS.pop(hostname, None)
         return {"hostname": hostname, "error": str(e), "gpus": []}
@@ -237,10 +223,10 @@ def background_monitor_loop():
         if not current_servers:
             with CACHE_LOCK:
                 GLOBAL_GPU_STATS = []
-            time.sleep(1)  # 无服务器时快速轮询
+            time.sleep(1)
             continue
 
-        max_threads = min(10, len(current_servers))  # 增加并发
+        max_threads = min(10, len(current_servers))
         if max_threads > 0:
             with ThreadPoolExecutor(max_workers=max_threads) as executor:
                 results = list(executor.map(fetch_single_server_data, current_servers))
@@ -250,7 +236,7 @@ def background_monitor_loop():
             GLOBAL_GPU_STATS = results
 
         elapsed = time.time() - start_time
-        sleep_time = max(0.5, 1.0 - elapsed)  # 目标间隔 1 秒
+        sleep_time = max(0.5, 1.0 - elapsed)
         time.sleep(sleep_time)
 
 
@@ -259,6 +245,8 @@ def background_monitor_loop():
 @app.route('/')
 def dashboard():
     return render_template('index.html')
+
+
 
 
 @app.route('/api/gpustat/all')

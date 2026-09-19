@@ -10,8 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/2.0.3/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js">
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256' viewBox='0 0 32 32'><path fill='%2380bc00' d='M12.447 12.265v-1.674q.244-.018.494-.026c4.577-.143 7.581 3.934 7.581 3.934S17.278 19 13.8 19a4.2 4.2 0 0 1-1.353-.217v-5.071c1.782.215 2.14 1 3.212 2.788l2.383-2.009a6.3 6.3 0 0 0-4.672-2.281a9 9 0 0 0-.923.055m0-5.529v2.5q.246-.02.494-.03c6.366-.214 10.513 5.221 10.513 5.221s-4.764 5.792-9.726 5.792a7.4 7.4 0 0 1-1.281-.112v1.545a9 9 0 0 0 1.067.069c4.618 0 7.958-2.358 11.192-5.15c.535.43 2.731 1.474 3.182 1.932c-3.075 2.574-10.241 4.649-14.3 4.649c-.392 0-.769-.024-1.138-.06v2.172H30V6.736Zm0 12.051v1.32c-4.271-.762-5.457-5.2-5.457-5.2a9.23 9.23 0 0 1 5.457-2.64v1.447h-.006a4.1 4.1 0 0 0-3.184 1.456s.782 2.811 3.19 3.62m-7.586-4.077a10.58 10.58 0 0 1 7.586-4.122V9.236C6.848 9.685 2 14.427 2 14.427s2.746 7.939 10.447 8.665v-1.44c-5.647-.711-7.586-6.939-7.586-6.939' /></svg>">
@@ -22,6 +21,7 @@
         body {
             min-height: 100%;
             background-color: #212529 !important;
+            overflow-x: hidden;
         }
 
         /* ===== GPU 卡片 ===== */
@@ -51,10 +51,24 @@
             animation: none !important;
         }
 
+        /* ===== 空闲状态变淡 ===== */
+        .gpu-idle {
+            opacity: 0.8; 
+            transition: opacity 0.2s ease;
+        }
+        
+        .gpu-idle:hover {
+            opacity: 1; 
+        }
+
         /* ===== 拖拽 ===== */
         .cursor-move {
-            cursor: move;
+            cursor: grab;
             color: #6c757d;
+        }
+        
+        .cursor-move:active {
+            cursor: grabbing;
         }
 
         .cursor-move:hover {
@@ -85,9 +99,9 @@
 
         /* =========================================================
                    右侧服务器快捷栏
-                   ========================================================= */
+           ========================================================= */
         .server-shortcuts {
-            position: fixed;
+            position: absolute;
             top: 76px;
             width: 180px;
             max-height: calc(100vh - 96px);
@@ -146,6 +160,14 @@
             background: #2d3338;
             border-color: #495057;
             transform: translateX(1px);
+        }
+        
+        .server-shortcut-btn[data-hostname] {
+            cursor: grab;
+        }
+        
+        .server-shortcut-btn[data-hostname]:active {
+            cursor: grabbing;
         }
 
         .server-shortcut-btn.active {
@@ -237,10 +259,10 @@
         }
 
         /* =========================================================
-                   左侧用户快捷栏
-                   ========================================================= */
+                   左侧用户及型号快捷栏
+           ========================================================= */
         .user-gpu-shortcuts {
-            position: fixed;
+            position: absolute;
             top: 76px;
             width: 180px;
             max-height: calc(100vh - 96px);
@@ -404,6 +426,26 @@
             border-color: #157347;
         }
 
+        /* ===== 无空余状态的样式 (去除 hover 和点击按下的反馈) ===== */
+        .user-free-gpu-card.empty-btn,
+        .user-shortcut-btn.empty-btn {
+            cursor: default !important;
+        }
+        
+        .user-free-gpu-card.empty-btn:hover,
+        .user-shortcut-btn.empty-btn:hover,
+        .user-free-gpu-card.empty-btn:active,
+        .user-shortcut-btn.empty-btn:active,
+        .user-free-gpu-card.empty-btn:focus,
+        .user-shortcut-btn.empty-btn:focus {
+            background: #252a2e !important; 
+            border-color: #343a40 !important;
+            color: #ced4da !important;
+            box-shadow: none !important;
+            transform: none !important;
+            outline: none !important;
+        }
+
         .user-shortcut-left {
             display: flex;
             align-items: center;
@@ -419,12 +461,16 @@
 
         .user-gpu-count {
             flex-shrink: 0;
-            font-size: 10px;
+            font-size: 11px;
             color: #adb5bd;
+            white-space: nowrap;
         }
 
-        .user-shortcut-btn.active .user-gpu-count {
-            color: #fff;
+        /* 选中状态下，所有的文字内容（包括空闲和总计的文字）都变成白色 */
+        .user-shortcut-btn.active .user-gpu-count,
+        .user-shortcut-btn.active .user-gpu-count span {
+            color: #fff !important;
+            opacity: 1 !important;
         }
 
         .user-gpu-shortcuts-empty {
@@ -451,13 +497,22 @@
             background: #6c757d;
         }
 
-        /* ===== 小屏幕隐藏快捷栏 ===== */
+        /* ===== 移动端自适应优化 ===== */
         @media (max-width: 899.98px) {
-
             .server-shortcuts,
             .user-gpu-shortcuts {
                 display: none !important;
             }
+        }
+
+        @media (min-width: 400px) and (max-width: 575.98px) {
+            .col-xs-6 { flex: 0 0 auto; width: 50%; }
+        }
+
+        @media (max-width: 575.98px) {
+            #gpu-cards-container .card-body { padding: 0.75rem; }
+            #gpu-cards-container .card-footer .row { font-size: 0.75rem; }
+            #gpu-cards-container .gpu-name { font-size: 0.85rem; margin-bottom: 0.5rem !important;}
         }
 
         /* ===== DataTable ===== */
@@ -476,58 +531,94 @@
 
         /* ===== 卡片高亮联动效果 ===== */
         .gpu-card-highlight > .card {
-            /* 极高亮度、零灰度的纯正 LED 蓝 */
-            border-color: #0088ff !important; 
-            /* 拒绝发灰：叠加三层光晕！
-               第1层：100%不透明的实心蓝，彻底隔绝背景灰度
-               第2层：90%透明度的强光
-               第3层：大范围的柔和蓝光 */
-            box-shadow: 0 0 0 2px #0088ff, 
-                        0 0 12px rgba(0, 136, 255, 0.9), 
-                        0 0 25px rgba(0, 136, 255, 0.5) !important; 
+            border-color: #0088ff !important;
+            box-shadow: 0 0 0 2px #0088ff,
+                        0 0 12px rgba(0, 136, 255, 0.9),
+                        0 0 25px rgba(0, 136, 255, 0.5) !important;
             transform: translateY(-4px);
-            z-index: 10; /* 保证悬停放大的卡片不会被旁边的卡片遮挡 */
+            z-index: 10;
         }
-        
+
         #gpu-cards-container .card {
-            /* 给所有 GPU 卡片添加平滑过渡动画 */
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
         }
     </style>
 </head>
 
 <body class="bg-dark">
 
-    <!-- ===== 左侧用户快捷栏 ===== -->
+    <!-- ===== 左侧用户及型号快捷栏 (Desktop) ===== -->
     <aside id="user-gpu-shortcuts" class="user-gpu-shortcuts">
+        <!-- 1. 用户区块 -->
         <div class="user-gpu-shortcuts-title">
             <i class="fas fa-user me-1"></i> Users
         </div>
-        <div id="user-gpu-shortcuts-list"></div>
+        <div id="user-gpu-shortcuts-list" class="mb-3"></div>
+
+        <!-- 2. 免费型号区块 -->
+        <div class="user-gpu-shortcuts-title">
+            <i class="fas fa-microchip me-1"></i> Free Models
+        </div>
+        <div id="free-model-shortcuts-list"></div>
     </aside>
 
-    <!-- ===== 右侧服务器快捷栏 ===== -->
+    <!-- ===== 右侧服务器快捷栏 (Desktop) ===== -->
     <aside id="server-shortcuts" class="server-shortcuts">
         <div class="server-shortcuts-title">
             <i class="fas fa-server me-1"></i> Servers
         </div>
+        <div class="mb-2 text-muted" style="font-size: 10px; text-align: center;"><i class="fas fa-info-circle me-1"></i> Drag to reorder</div>
         <div id="server-shortcuts-list"></div>
     </aside>
 
+    <!-- ===== 移动端过滤抽屉 (Offcanvas) ===== -->
+    <div class="offcanvas offcanvas-start bg-dark text-white border-end border-secondary" tabindex="-1" id="mobileFilters" style="width: 280px;">
+        <div class="offcanvas-header border-bottom border-secondary py-2">
+            <h6 class="offcanvas-title fw-bold text-light"><i class="fas fa-filter me-2 text-muted"></i>Filters</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <!-- 1. 移动端注入容器：User List -->
+            <div class="mb-4">
+                <div class="user-gpu-shortcuts-title text-light"><i class="fas fa-user me-1"></i> Users</div>
+                <div id="mobile-user-shortcuts-list"></div>
+            </div>
+            <!-- 2. 移动端注入容器：Free Models -->
+            <div class="mb-4">
+                <div class="user-gpu-shortcuts-title text-light"><i class="fas fa-microchip me-1"></i> Free Models</div>
+                <div id="mobile-free-model-shortcuts-list"></div>
+            </div>
+            <!-- 3. 移动端注入容器：Server List -->
+            <div>
+                <div class="server-shortcuts-title text-light"><i class="fas fa-server me-1"></i> Servers</div>
+                <div id="mobile-server-shortcuts-list"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== 顶部导航 ===== -->
     <nav class="navbar navbar-expand navbar-dark bg-dark border-bottom border-secondary sticky-top">
-        <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="#">
+        <div class="container d-flex align-items-center">
+            
+            <!-- 汉堡菜单按钮 (由 JS 动态控制显示) -->
+            <button id="mobile-menu-btn" class="btn btn-outline-secondary border-0 d-none align-items-center justify-content-center me-2 p-0" type="button" 
+                data-bs-toggle="offcanvas" data-bs-target="#mobileFilters" style="width:38px; height:38px;">
+                <i class="fas fa-bars fa-lg text-light"></i>
+            </button>
+
+            <a class="navbar-brand d-flex align-items-center m-0 p-0" href="#">
                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 32 32" class="me-2">
                     <path fill="#80bc00"
                         d="M12.447 12.265v-1.674q.244-.018.494-.026c4.577-.143 7.581 3.934 7.581 3.934S17.278 19 13.8 19a4.2 4.2 0 0 1-1.353-.217v-5.071c1.782.215 2.14 1 3.212 2.788l2.383-2.009a6.3 6.3 0 0 0-4.672-2.281a9 9 0 0 0-.923.055m0-5.529v2.5q.246-.02.494-.03c6.366-.214 10.513 5.221 10.513 5.221s-4.764 5.792-9.726 5.792a7.4 7.4 0 0 1-1.281-.112v1.545a9 9 0 0 0 1.067.069c4.618 0 7.958-2.358 11.192-5.15c.535.43 2.731 1.474 3.182 1.932c-3.075 2.574-10.241 4.649-14.3 4.649c-.392 0-.769-.024-1.138-.06v2.172H30V6.736Zm0 12.051v1.32c-4.271-.762-5.457-5.2-5.457-5.2a9.23 9.23 0 0 1 5.457-2.64v1.447h-.006a4.1 4.1 0 0 0-3.184 1.456s.782 2.811 3.19 3.62m-7.586-4.077a10.58 10.58 0 0 1 7.586-4.122V9.236C6.848 9.685 2 14.427 2 14.427s2.746 7.939 10.447 8.665v-1.44c-5.647-.711-7.586-6.939-7.586-6.939" />
                 </svg>
-                <b>GPU</b>&nbsp;Monitor
+                <b class="d-none d-sm-inline">GPU</b><span class="d-none d-sm-inline">&nbsp;Monitor</span>
+                <span class="d-sm-none fw-bold fs-5">Monitor</span>
             </a>
-            <div class="d-flex align-items-center gap-3 ms-auto">
-                <div class="d-flex align-items-center gap-3 text-white small">
-                    <span id="connection-status" class="badge bg-secondary">Connecting...</span>
-                    <div id="update-timestamp" class="text-white-50">Waiting...</div>
+            
+            <div class="d-flex align-items-center gap-2 gap-md-3 ms-auto">
+                <div class="d-flex flex-column flex-md-row align-items-end align-items-md-center gap-0 gap-md-3 text-white small">
+                    <span id="connection-status" class="badge bg-secondary mb-1 mb-md-0">Connecting...</span>
+                    <div id="update-timestamp" class="text-white-50" style="font-size: 0.75rem;">Waiting...</div>
                 </div>
                 <button class="btn btn-outline-light btn-icon-only border-0" data-bs-toggle="modal"
                     data-bs-target="#settingsModal" title="Settings">
@@ -541,10 +632,10 @@
     <div class="container py-4" id="main-content">
 
         <!-- GPU Cards -->
-        <div class="row g-3" id="gpu-cards-container"></div>
+        <div class="row g-2 g-sm-3" id="gpu-cards-container"></div>
 
         <!-- GPU Table -->
-        <div class="card mb-3">
+        <div class="card mb-3 d-none d-md-block">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-table me-2"></i> All Nodes and GPUs</span>
@@ -574,35 +665,34 @@
         </div>
 
         <!-- Legend -->
-        <div class="card mt-3 mb-4">
+        <div class="card mt-3 mb-4 shadow-sm">
             <div class="card-body p-3">
                 <div class="d-flex align-items-center flex-wrap gap-3">
-                    <h6 class="card-title mb-0 me-2"><i class="fas fa-palette me-2"></i> Legend:</h6>
+                    <h6 class="card-title mb-0 me-2 text-dark"><i class="fas fa-palette me-2"></i> Legend:</h6>
                     <div class="d-flex flex-wrap gap-2">
                         <span class="badge rounded-pill bg-danger">Hot (>75°C)</span>
                         <span class="badge rounded-pill bg-warning text-dark">Warm (50-75°C)</span>
                         <span class="badge rounded-pill bg-success">Normal</span>
                         <span class="badge rounded-pill bg-primary">Cool</span>
+                        <span class="badge rounded-pill bg-primary gpu-idle">Idle (Faded)</span>
                         <span class="badge rounded-pill bg-secondary">Offline / Error</span>
                     </div>
                 </div>
             </div>
         </div>
-
+        
         <!-- Footer -->
         <footer class="py-4 bg-dark">
             <div class="container">
                 <div class="text-center">
                     <small>
-                        <a href="https://github.com/YYYYYuanZi/GPUMonitor" class="text-white"
-                            style="text-decoration:none">
+                        <a href="https://github.com/YYYYYuanZi/GPUMonitor" class="text-white-50 text-decoration-none transition">
                             <i class="fab fa-github"></i> YYYYYuanZi/GPUMonitor | 2026
                         </a>
                     </small>
                 </div>
             </div>
         </footer>
-
     </div>
 
     <!-- ===== Settings Modal ===== -->
@@ -622,8 +712,7 @@
                             <form id="add-server-form" class="row g-2">
                                 <div class="col-md-3">
                                     <label class="form-label small text-muted mb-1">Hostname / IP</label>
-                                    <input type="text" class="form-control" id="new-host" placeholder="192.168.1.x"
-                                        required>
+                                    <input type="text" class="form-control" id="new-host" placeholder="192.168.1.x" required>
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label small text-muted mb-1">Port</label>
@@ -635,12 +724,10 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label small text-muted mb-1">Password</label>
-                                    <input type="password" class="form-control" id="new-pass" placeholder="Password"
-                                        required>
+                                    <input type="password" class="form-control" id="new-pass" placeholder="Password" required>
                                 </div>
                                 <div class="col-md-1 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary w-100"><i
-                                            class="fas fa-plus"></i></button>
+                                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-plus"></i></button>
                                 </div>
                             </form>
                         </div>
@@ -656,8 +743,7 @@
                             </div>
                             <textarea id="bulk-servers-textarea" class="form-control" rows="4"
                                 placeholder="192.168.1.10,22,root,secretpass&#10;192.168.1.11,22,root,secretpass"></textarea>
-                            <div class="form-text">Lines without 4 comma-separated values will be ignored. Existing
-                                hostnames are skipped.</div>
+                            <div class="form-text">Lines without 4 comma-separated values will be ignored. Existing hostnames are skipped.</div>
                             <button id="bulk-add-btn" class="btn btn-primary mt-3">Add Servers</button>
                         </div>
                     </div>
@@ -665,8 +751,7 @@
                     <!-- Server List -->
                     <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
                         <h6 class="mb-0 text-dark">Managed Servers List</h6>
-                        <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Drag <i
-                                class="fas fa-bars mx-1"></i> to reorder</small>
+                        <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Drag <i class="fas fa-bars mx-1"></i> to reorder</small>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
@@ -692,24 +777,25 @@
     </div>
 
     <!-- ===== JS 库 ===== -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
-    </script>
-    <script src="https://cdn.datatables.net/2.0.3/js/dataTables.min.js">
-    </script>
-    <script src="https://cdn.datatables.net/2.0.3/js/dataTables.bootstrap5.min.js">
-    </script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/2.0.3/js/dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/2.0.3/js/dataTables.bootstrap5.min.js"></script>
 
     <script>
         // ===== 全局变量 =====
         let dataTable = null;
         let isRefreshEnabled = true;
         let refreshTimeout = null;
-        const REFRESH_RATE = 1000;
-        let sortableInstance = null;
+        const REFRESH_RATE = 2000;
+        
+        let sortableInstance = null; 
+        let sidebarSortableInstance = null; 
+        
         let selectedServer = null;
         let selectedUser = null;
+        let selectedFreeModel = null; 
+        
         let lastServerStatusData = null;
         const gpuCardMap = new Map();
 
@@ -718,21 +804,96 @@
         const SHORTCUT_EDGE = 12;
         const SHORTCUT_MIN_SCREEN = 900;
 
+        // ===== 显卡档次/算力权重映射表（分值越高越靠前） =====
+        const GPU_MODEL_TIERS = {
+            'H200': 1200, 'H100': 1100, 'H800': 1050, 'A100': 1000,
+            'A800': 950, 'L40S': 860, 'L40': 850, 'RTX 6000 Ada': 840,
+            'RTX A6000': 820, 'RTX A5000': 780, 'L4': 750, 'A40': 740,
+            'A30': 720, 'V100': 700, 'A10': 680, 'T4': 600,
+            'RTX 5090': 590, 'RTX 4090': 580, 'RTX 4080': 550,
+            'RTX 3090 Ti': 520, 'RTX 3090': 500, 'RTX 3080': 450, 'RTX 2080 Ti': 400
+        };
+
+        function getGpuModelWeight(modelName) {
+            const cleanName = modelName.trim();
+            if (GPU_MODEL_TIERS[cleanName] !== undefined) {
+                return GPU_MODEL_TIERS[cleanName];
+            }
+            for (const [key, weight] of Object.entries(GPU_MODEL_TIERS)) {
+                if (cleanName.includes(key)) return weight;
+            }
+            return 0; 
+        }
+
+        function closeMobileOffcanvas() {
+            const offcanvasEl = document.getElementById('mobileFilters');
+            if (offcanvasEl) {
+                const instance = bootstrap.Offcanvas.getInstance(offcanvasEl);
+                if (instance) instance.hide();
+            }
+        }
+
         // ===== 卡片高亮联动函数 =====
         function highlightCards(keys) {
             clearHighlights();
             keys.forEach(function(key) {
                 const cardWrapper = gpuCardMap.get(key);
-                if (cardWrapper) {
-                    cardWrapper.classList.add('gpu-card-highlight');
-                }
+                if (cardWrapper) cardWrapper.classList.add('gpu-card-highlight');
             });
         }
 
         function clearHighlights() {
-            document.querySelectorAll('.gpu-card-highlight').forEach(function(el) {
-                el.classList.remove('gpu-card-highlight');
+            document.querySelectorAll('.gpu-card-highlight').forEach(el => el.classList.remove('gpu-card-highlight'));
+        }
+
+        // ===== GPU 卡片实时排序核心逻辑 (拖拽时触发) =====
+        function reorderGpuCardsByHostnames(hostnames) {
+            const container = document.getElementById('gpu-cards-container');
+            if (!container) return;
+            
+            const cards = Array.from(container.children);
+            cards.sort((a, b) => {
+                const hostA = a.dataset.hostname;
+                const hostB = b.dataset.hostname;
+                
+                let idxA = hostnames.indexOf(hostA);
+                let idxB = hostnames.indexOf(hostB);
+                
+                if (idxA === -1) idxA = 999;
+                if (idxB === -1) idxB = 999;
+                
+                if (idxA !== idxB) return idxA - idxB;
+                
+                let indexA = parseInt(a.dataset.gpuIndex);
+                let indexB = parseInt(b.dataset.gpuIndex);
+                if (isNaN(indexA)) indexA = 0;
+                if (isNaN(indexB)) indexB = 0;
+                return indexA - indexB;
             });
+            
+            cards.forEach(card => container.appendChild(card));
+        }
+
+        function syncGpuCardsOrderToSidebar() {
+            const hostnames = Array.from(document.querySelectorAll('#server-shortcuts-list .server-shortcut-btn[data-hostname]'))
+                .map(btn => btn.dataset.hostname);
+            reorderGpuCardsByHostnames(hostnames);
+        }
+
+        function sortDataBySidebar(data) {
+            const uiOrder = Array.from(document.querySelectorAll('#server-shortcuts-list .server-shortcut-btn[data-hostname]'))
+                .map(btn => btn.dataset.hostname);
+            
+            if (uiOrder.length > 0) {
+                data.sort((a, b) => {
+                    let indexA = uiOrder.indexOf(a.hostname);
+                    let indexB = uiOrder.indexOf(b.hostname);
+                    if (indexA === -1) indexA = 999;
+                    if (indexB === -1) indexB = 999;
+                    return indexA - indexB;
+                });
+            }
+            return data;
         }
 
         // ===== 快捷栏位置自适应 =====
@@ -740,37 +901,51 @@
             const userSidebar = document.getElementById('user-gpu-shortcuts');
             const serverSidebar = document.getElementById('server-shortcuts');
             const main = document.getElementById('main-content');
+            const menuBtn = document.getElementById('mobile-menu-btn'); 
+
             if (!userSidebar || !serverSidebar || !main) return;
 
             const vw = window.innerWidth;
+            let needMobileMenu = false;
+
             if (vw < SHORTCUT_MIN_SCREEN) {
                 userSidebar.classList.add('overlap-hidden');
                 serverSidebar.classList.add('overlap-hidden');
-                return;
+                needMobileMenu = true; 
+            } else {
+                const mainRect = main.getBoundingClientRect();
+                const uW = userSidebar.offsetWidth || SHORTCUT_WIDTH;
+                const sW = serverSidebar.offsetWidth || SHORTCUT_WIDTH;
+
+                if (mainRect.left >= uW + SHORTCUT_GAP + SHORTCUT_EDGE) {
+                    userSidebar.style.left = Math.max(SHORTCUT_EDGE, mainRect.left - uW - SHORTCUT_GAP) + 'px';
+                    userSidebar.style.right = '';
+                    userSidebar.classList.remove('overlap-hidden');
+                } else {
+                    userSidebar.classList.add('overlap-hidden');
+                    userSidebar.style.left = '';
+                    needMobileMenu = true;
+                }
+
+                if (vw - mainRect.right >= sW + SHORTCUT_GAP + SHORTCUT_EDGE) {
+                    serverSidebar.style.right = Math.max(SHORTCUT_EDGE, vw - mainRect.right - sW - SHORTCUT_GAP) + 'px';
+                    serverSidebar.style.left = '';
+                    serverSidebar.classList.remove('overlap-hidden');
+                } else {
+                    serverSidebar.classList.add('overlap-hidden');
+                    serverSidebar.style.right = '';
+                    needMobileMenu = true;
+                }
             }
 
-            const mainRect = main.getBoundingClientRect();
-            const uW = userSidebar.offsetWidth || SHORTCUT_WIDTH;
-            const sW = serverSidebar.offsetWidth || SHORTCUT_WIDTH;
-
-            // 左边
-            if (mainRect.left >= uW + SHORTCUT_GAP + SHORTCUT_EDGE) {
-                userSidebar.style.left = Math.max(SHORTCUT_EDGE, mainRect.left - uW - SHORTCUT_GAP) + 'px';
-                userSidebar.style.right = '';
-                userSidebar.classList.remove('overlap-hidden');
-            } else {
-                userSidebar.classList.add('overlap-hidden');
-                userSidebar.style.left = '';
-            }
-
-            // 右边
-            if (vw - mainRect.right >= sW + SHORTCUT_GAP + SHORTCUT_EDGE) {
-                serverSidebar.style.right = Math.max(SHORTCUT_EDGE, vw - mainRect.right - sW - SHORTCUT_GAP) + 'px';
-                serverSidebar.style.left = '';
-                serverSidebar.classList.remove('overlap-hidden');
-            } else {
-                serverSidebar.classList.add('overlap-hidden');
-                serverSidebar.style.right = '';
+            if (menuBtn) {
+                if (needMobileMenu) {
+                    menuBtn.classList.remove('d-none');
+                    menuBtn.classList.add('d-flex'); 
+                } else {
+                    menuBtn.classList.add('d-none');
+                    menuBtn.classList.remove('d-flex');
+                }
             }
         }
         window.addEventListener('resize', updateShortcutPositions);
@@ -779,7 +954,6 @@
         document.addEventListener('DOMContentLoaded', function () {
             updateShortcutPositions();
 
-            // DataTable
             dataTable = new DataTable('#dataTable', {
                 paging: true,
                 pageLength: 25,
@@ -789,18 +963,13 @@
                 order: [[0, 'asc'], [1, 'asc']],
                 autoWidth: false,
                 columnDefs: [
-                    { targets: 0, width: '12%' },
-                    { targets: 1, width: '25%' },
-                    { targets: 2, width: '8%' },
-                    { targets: 3, width: '10%' },
-                    { targets: 4, width: '15%' },
-                    { targets: 5, width: '10%' },
-                    { targets: 6, width: '21%' },
-                    { targets: '_all', className: 'small align-middle' }
+                    { targets: 0, width: '12%' }, { targets: 1, width: '25%' },
+                    { targets: 2, width: '8%' }, { targets: 3, width: '10%' },
+                    { targets: 4, width: '15%' }, { targets: 5, width: '10%' },
+                    { targets: 6, width: '21%' }, { targets: '_all', className: 'small align-middle' }
                 ]
             });
 
-            // 刷新按钮
             document.getElementById('toggle-refresh').addEventListener('click', function () {
                 isRefreshEnabled = !isRefreshEnabled;
                 if (isRefreshEnabled) {
@@ -814,16 +983,13 @@
                 }
             });
 
-            // Settings Modal
             document.getElementById('settingsModal').addEventListener('show.bs.modal', loadSettings);
-
-            // Add Server
+            
             document.getElementById('add-server-form').addEventListener('submit', async function (e) {
                 e.preventDefault();
                 await addServer();
             });
 
-            // Bulk Add
             document.getElementById('bulk-add-btn').addEventListener('click', async function () {
                 await addServersBulk();
             });
@@ -855,6 +1021,11 @@
             return normalizeGpuData(raw).map(normalizeNode).filter(Boolean);
         }
 
+        function simplifyModelName(name) {
+            if (!name) return 'Unknown';
+            return name.replace(/NVIDIA\s+/i, '').replace(/GeForce\s+/i, '').trim();
+        }
+
         // ===== 服务器快捷栏 =====
         async function loadServerShortcuts() {
             try {
@@ -862,83 +1033,126 @@
                 if (!res.ok) throw new Error('Failed to load servers');
                 const servers = await res.json();
                 renderServerShortcuts(Array.isArray(servers) ? servers : []);
-            } catch (e) { console.error('Load server shortcuts failed:', e); }
+            } catch (e) { 
+                console.error('Load server shortcuts failed:', e); 
+            }
         }
 
         function renderServerShortcuts(servers) {
-            const container = document.getElementById('server-shortcuts-list');
-            container.innerHTML = '';
+            const renderTarget = (containerId, isMobile) => {
+                const container = document.getElementById(containerId);
+                if(!container) return;
+                container.innerHTML = '';
 
-            // All Servers
-            const allBtn = document.createElement('button');
-            allBtn.type = 'button';
-            allBtn.className = 'server-shortcut-btn' + (selectedServer === null ? ' active' : '');
-            allBtn.innerHTML =
-                `<i class="fas fa-layer-group"></i><span class="server-shortcut-name">All Servers</span><span class="server-status-dot all-status"></span>`;
-            allBtn.title = 'Show all servers';
-            
-            // 为 All Servers 绑定 Hover 事件
-            allBtn.addEventListener('mouseenter', function() {
-                const allKeys = Array.from(gpuCardMap.keys());
-                highlightCards(allKeys);
-            });
-            allBtn.addEventListener('mouseleave', clearHighlights);
+                const allBtn = document.createElement('button');
+                allBtn.type = 'button';
+                allBtn.className = 'server-shortcut-btn' + (selectedServer === null ? ' active' : '');
+                allBtn.innerHTML = `<i class="fas fa-layer-group"></i><span class="server-shortcut-name">All Servers</span><span class="server-status-dot all-status"></span>`;
+                allBtn.title = 'Show all servers';
 
-            allBtn.addEventListener('click', function () {
-                const changed = selectedServer !== null || selectedUser !== null;
-                selectedServer = null;
-                selectedUser = null;
-                updateAllActiveStates();
-                if (changed) fetchData();
-            });
-            container.appendChild(allBtn);
+                if(!isMobile) {
+                    allBtn.addEventListener('mouseenter', function() {
+                        const allKeys = Array.from(gpuCardMap.keys());
+                        highlightCards(allKeys);
+                    });
+                    allBtn.addEventListener('mouseleave', clearHighlights);
+                }
 
-            if (!servers || servers.length === 0) {
-                const empty = document.createElement('div');
-                empty.className = 'server-shortcuts-empty';
-                empty.textContent = 'No servers';
-                container.appendChild(empty);
-                updateShortcutPositions();
-                return;
-            }
-
-            servers.forEach(function (server) {
-                const hostname = String(server.hostname || '');
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'server-shortcut-btn' + (selectedServer === hostname ? ' active' : '');
-                btn.dataset.hostname = hostname;
-                btn.title = `Show ${hostname}`;
-                btn.innerHTML =
-                    `<i class="fas fa-server"></i><span class="server-shortcut-name">${escapeHtml(hostname)}</span><span class="server-status-dot unknown" data-status-host="${escapeHtml(hostname)}"></span>`;
-
-                // 为单个服务器按钮绑定 Hover 事件
-                btn.addEventListener('mouseenter', function() {
-                    const serverKeys = [];
-                    for (const key of gpuCardMap.keys()) {
-                        if (key.startsWith(`${hostname}::`)) serverKeys.push(key);
-                    }
-                    highlightCards(serverKeys);
-                });
-                btn.addEventListener('mouseleave', clearHighlights);
-
-                btn.addEventListener('click', function () {
-                    if (selectedServer === hostname && selectedUser === null) {
-                        selectedServer = null;
-                    } else {
-                        selectedServer = hostname;
-                        selectedUser = null;
-                    }
+                allBtn.addEventListener('click', function () {
+                    const changed = selectedServer !== null || selectedUser !== null || selectedFreeModel !== null;
+                    selectedServer = null;
+                    selectedUser = null;
+                    selectedFreeModel = null;
                     updateAllActiveStates();
-                    fetchData();
+                    if (changed) fetchData();
+                    if (isMobile) closeMobileOffcanvas();
                 });
-                container.appendChild(btn);
-            });
+                container.appendChild(allBtn);
 
+                if (!servers || servers.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'server-shortcuts-empty';
+                    empty.textContent = 'No servers';
+                    container.appendChild(empty);
+                    return;
+                }
+
+                servers.forEach(function (server) {
+                    const hostname = String(server.hostname || '');
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'server-shortcut-btn' + (selectedServer === hostname ? ' active' : '');
+                    btn.dataset.hostname = hostname;
+                    btn.title = `Show ${hostname}`;
+                    btn.innerHTML = `<i class="fas fa-server"></i><span class="server-shortcut-name">${escapeHtml(hostname)}</span><span class="server-status-dot unknown" data-status-host="${escapeHtml(hostname)}"></span>`;
+
+                    if(!isMobile) {
+                        btn.addEventListener('mouseenter', function() {
+                            const serverKeys = [];
+                            for (const key of gpuCardMap.keys()) {
+                                if (key.startsWith(`${hostname}::`)) serverKeys.push(key);
+                            }
+                            highlightCards(serverKeys);
+                        });
+                        btn.addEventListener('mouseleave', clearHighlights);
+                    }
+
+                    btn.addEventListener('click', function () {
+                        if (selectedServer === hostname && selectedUser === null && selectedFreeModel === null) {
+                            selectedServer = null;
+                        } else {
+                            selectedServer = hostname;
+                            selectedUser = null;
+                            selectedFreeModel = null;
+                        }
+                        updateAllActiveStates();
+                        fetchData();
+                        if (isMobile) closeMobileOffcanvas();
+                    });
+                    container.appendChild(btn);
+                });
+
+                // 右侧服务器快捷栏可直接拖拽排序
+                if (!isMobile && containerId === 'server-shortcuts-list' && servers.length > 0) {
+                    if (sidebarSortableInstance) sidebarSortableInstance.destroy();
+                    
+                    sidebarSortableInstance = new Sortable(container, {
+                        draggable: '.server-shortcut-btn[data-hostname]', 
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        onChange: function () {
+                            syncGpuCardsOrderToSidebar();
+                        },
+                        onEnd: async function () {
+                            syncGpuCardsOrderToSidebar(); 
+                            const buttons = container.querySelectorAll('.server-shortcut-btn[data-hostname]');
+                            const newOrder = Array.from(buttons).map(btn => btn.dataset.hostname).filter(Boolean);
+                            try {
+                                await fetch('/api/admin/servers/reorder', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(newOrder)
+                                });
+                                if (document.getElementById('settingsModal').classList.contains('show')) {
+                                    loadSettings();
+                                }
+                                fetchData();
+                            } catch (e) {
+                                console.error('Save sidebar order failed', e);
+                                loadServerShortcuts(); 
+                            }
+                        }
+                    });
+                }
+            };
+
+            renderTarget('server-shortcuts-list', false);
+            renderTarget('mobile-server-shortcuts-list', true);
+            
             if (lastServerStatusData) updateServerShortcutStatus(lastServerStatusData);
             requestAnimationFrame(updateShortcutPositions);
         }
-        // ===== 服务器状态 =====
+
         function updateServerShortcutStatus(data) {
             if (!Array.isArray(data)) return;
             lastServerStatusData = data;
@@ -969,11 +1183,12 @@
             });
         }
 
-        // ===== 激活状态 =====
+        // ===== 激活状态同步 =====
         function updateAllActiveStates() {
             updateShortcutActiveState();
             updateUserShortcutActiveState();
             updateFreeGpuShortcutActiveState();
+            updateFreeModelActiveState();
         }
 
         function updateShortcutActiveState() {
@@ -981,8 +1196,9 @@
                 btn.classList.remove('active');
             });
             if (selectedServer === null) {
-                const first = document.querySelector('.server-shortcut-btn');
-                if (first) first.classList.add('active');
+                document.querySelectorAll('#server-shortcuts-list .server-shortcut-btn:first-child, #mobile-server-shortcuts-list .server-shortcut-btn:first-child').forEach(first => {
+                    if (first) first.classList.add('active');
+                });
                 return;
             }
             document.querySelectorAll('.server-shortcut-btn .server-shortcut-name').forEach(function (nameEl) {
@@ -992,18 +1208,36 @@
             });
         }
 
+        function updateUserShortcutActiveState() {
+            document.querySelectorAll('.user-shortcut-btn[data-username]').forEach(function (btn) {
+                btn.classList.toggle('active', btn.dataset.username === selectedUser);
+            });
+        }
+
+        function updateFreeGpuShortcutActiveState() {
+            document.querySelectorAll('.user-free-gpu-card').forEach(card => {
+                card.classList.toggle('active', selectedUser === '__FREE_GPUS__');
+            });
+        }
+        
+        function updateFreeModelActiveState() {
+            document.querySelectorAll('.user-shortcut-btn[data-freemodel]').forEach(function (btn) {
+                btn.classList.toggle('active', btn.dataset.freemodel === selectedFreeModel);
+            });
+        }
+
         // ===== 用户解析 =====
         function extractGpuUsers(gpu) {
             if (!gpu) return [];
             const raw = String(gpu.user_processes || gpu.users || '').trim();
             if (!raw || raw === 'None' || raw === '-') return [];
             const users = [];
-            
+
             const matches = raw.matchAll(/([A-Za-z_][A-Za-z0-9_.-]*)\s*\(/g);
             for (const match of matches) {
                 if (!users.includes(match[1])) users.push(match[1]);
             }
-            
+
             if (users.length === 0) {
                 const parts = raw.split(/[\n;, \t]+/);
                 for (const part of parts) {
@@ -1012,7 +1246,6 @@
                     }
                 }
             }
-            
             return users;
         }
 
@@ -1024,8 +1257,7 @@
                     extractGpuUsers(gpu).forEach(function (username) {
                         if (!userMap.has(username)) userMap.set(username, []);
                         userMap.get(username).push({
-                            hostname: node.hostname, index: gpu.index,
-                            name: gpu.name
+                            hostname: node.hostname, index: gpu.index, name: gpu.name
                         });
                     });
                 });
@@ -1057,82 +1289,154 @@
             if (selectedServer !== null) {
                 displayData = displayData.filter(function (node) { return node.hostname === selectedServer; });
             }
+            
             if (selectedUser === '__FREE_GPUS__') {
                 displayData = filterGpuDataByFreeGpu(displayData);
             } else if (selectedUser !== null) {
                 displayData = filterGpuDataByUser(displayData, selectedUser);
+            } else if (selectedFreeModel !== null) {
+                displayData = displayData.map(node => {
+                    const gpus = Array.isArray(node.gpus) ? node.gpus.filter(gpu => {
+                        const shortName = simplifyModelName(gpu.name);
+                        return extractGpuUsers(gpu).length === 0 && shortName === selectedFreeModel;
+                    }) : [];
+                    return gpus.length === 0 ? null : { ...node, gpus };
+                }).filter(Boolean);
             }
             return displayData;
         }
 
-        // ===== 用户快捷栏 =====
-        function renderUserGpuShortcuts(data) {
-            const container = document.getElementById('user-gpu-shortcuts-list');
-            if (!container) return;
+        // ===== 渲染 Free Models =====
+        function renderFreeModelShortcuts(data) {
+            const modelStats = {};
+            let globalTotal = 0, globalFree = 0;
+            const globalFreeKeys = [];
 
-            const userMap = buildUserGpuMap(data);
-            const users = Array.from(userMap.keys()).sort(function (a, b) { return a.localeCompare(b); });
-            container.innerHTML = '';
-
-            let freeGpuCount = 0,
-                totalGpuCount = 0;
-            (data || []).forEach(function (node) {
+            (data || []).forEach(node => {
                 const gpus = Array.isArray(node.gpus) ? node.gpus : [];
-                gpus.forEach(function (gpu) {
-                    totalGpuCount++;
-                    if (extractGpuUsers(gpu).length === 0) freeGpuCount++;
-                });
-            });
-
-            const freePercent = totalGpuCount > 0 ? Math.round((freeGpuCount / totalGpuCount) * 100) : 0;
-
-            // Free GPU
-            const freeCard = document.createElement('button');
-            freeCard.type = 'button';
-            freeCard.className = 'user-free-gpu-card' + (selectedUser === '__FREE_GPUS__' ? ' active' : '');
-            freeCard.innerHTML =
-                `<div class="d-flex align-items-center justify-content-between gap-2"><span class="user-free-gpu-left"><i class="fas fa-circle-check"></i><span class="user-free-gpu-label">Free GPUs</span></span><span class="user-free-gpu-percent">${freePercent}%</span></div><div class="d-flex align-items-baseline justify-content-between mt-1"><span class="user-free-gpu-count">${freeGpuCount} / ${totalGpuCount}</span><span class="small opacity-75">available</span></div><div class="user-free-gpu-progress"><div class="user-free-gpu-progress-bar" style="width:${freePercent}%"></div></div>`;
-            freeCard.title = `Show ${freeGpuCount} / ${totalGpuCount} available GPUs`;
-            
-            // 为 Free GPU 绑定 Hover 事件
-            const freeGpuKeys = [];
-            (data || []).forEach(function (node) {
-                const gpus = Array.isArray(node.gpus) ? node.gpus : [];
-                gpus.forEach(function (gpu) {
-                    if (extractGpuUsers(gpu).length === 0) {
-                        freeGpuKeys.push(`${node.hostname}::${gpu.index}`);
+                gpus.forEach(gpu => {
+                    globalTotal++;
+                    const isFree = extractGpuUsers(gpu).length === 0;
+                    if (isFree) {
+                        globalFree++;
+                        globalFreeKeys.push(`${node.hostname}::${gpu.index}`);
+                    }
+                    const shortName = simplifyModelName(gpu.name);
+                    if (!modelStats[shortName]) {
+                        modelStats[shortName] = { total: 0, free: 0, freeKeys: [] };
+                    }
+                    modelStats[shortName].total++;
+                    if (isFree) {
+                        modelStats[shortName].free++;
+                        modelStats[shortName].freeKeys.push(`${node.hostname}::${gpu.index}`);
                     }
                 });
             });
-            freeCard.addEventListener('mouseenter', function() { highlightCards(freeGpuKeys); });
-            freeCard.addEventListener('mouseleave', clearHighlights);
 
-            freeCard.addEventListener('click', function () {
-                if (selectedUser === '__FREE_GPUS__') {
-                    selectedUser = null;
-                    selectedServer = null;
-                } else {
-                    selectedUser = '__FREE_GPUS__';
-                    selectedServer = null;
-                }
-                updateAllActiveStates();
-                fetchData();
+            const freePercent = globalTotal > 0 ? Math.round((globalFree / globalTotal) * 100) : 0;
+            const models = Object.keys(modelStats).sort((a, b) => {
+                const weightA = getGpuModelWeight(a), weightB = getGpuModelWeight(b);
+                if (weightA !== weightB) return weightB - weightA;
+                return a.localeCompare(b);
             });
-            container.appendChild(freeCard);
 
-            if (users.length === 0) {
-                const empty = document.createElement('div');
-                empty.className = 'user-gpu-shortcuts-empty';
-                empty.textContent = 'No active users';
-                container.appendChild(empty);
-                requestAnimationFrame(updateShortcutPositions);
-                return;
-            }
+            const renderTarget = (containerId, isMobile) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = '';
 
-            users.forEach(function (username) {
+                const freeCard = document.createElement('button');
+                freeCard.type = 'button';
+                freeCard.className = 'user-free-gpu-card' + (selectedUser === '__FREE_GPUS__' ? ' active' : '');
+                freeCard.innerHTML = `
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <span class="user-free-gpu-left"><i class="fas fa-circle-check"></i><span class="user-free-gpu-label">Free GPUs (All)</span></span>
+                        <span class="user-free-gpu-percent">${freePercent}%</span>
+                    </div>
+                    <div class="d-flex align-items-baseline justify-content-between mt-1">
+                        <span class="user-free-gpu-count">${globalFree} / ${globalTotal}</span>
+                        <span class="small opacity-75">available</span>
+                    </div>
+                    <div class="user-free-gpu-progress"><div class="user-free-gpu-progress-bar" style="width:${freePercent}%"></div></div>`;
+                
+                if (globalFree === 0) {
+                    freeCard.classList.add('empty-btn');
+                    freeCard.title = `No GPUs available`;
+                } else {
+                    freeCard.title = `Show all ${globalFree} available GPUs`;
+                    if(!isMobile) {
+                        freeCard.addEventListener('mouseenter', () => highlightCards(globalFreeKeys));
+                        freeCard.addEventListener('mouseleave', clearHighlights);
+                    }
+                    freeCard.addEventListener('click', () => {
+                        if (selectedUser === '__FREE_GPUS__') selectedUser = null;
+                        else { selectedUser = '__FREE_GPUS__'; selectedServer = null; selectedFreeModel = null; }
+                        updateAllActiveStates();
+                        fetchData();
+                        if(isMobile) closeMobileOffcanvas();
+                    });
+                }
+                container.appendChild(freeCard);
+
+                if (models.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'user-gpu-shortcuts-empty';
+                    empty.textContent = 'No models detected';
+                    container.appendChild(empty);
+                    return;
+                }
+
+                models.forEach(model => {
+                    const stat = modelStats[model];
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'user-shortcut-btn' + (selectedFreeModel === model ? ' active' : '');
+                    btn.dataset.freemodel = model;
+                    
+                    const freeColorStyle = stat.free > 0 ? 'color: #20c997; font-weight: 600;' : 'color: #6c757d; font-weight: 600;';
+
+                    btn.innerHTML = `
+                        <span class="user-shortcut-left">
+                            <i class="fas fa-microchip" style="color: #adb5bd;"></i>
+                            <span class="user-shortcut-name" title="${escapeHtml(model)}">${escapeHtml(model)}</span>
+                        </span>
+                        <span class="user-gpu-count">
+                            <span style="${freeColorStyle}">${stat.free}</span> <span class="opacity-50">/ ${stat.total}</span>
+                        </span>
+                    `;
+
+                    if (stat.free === 0) {
+                        btn.classList.add('empty-btn');
+                        btn.title = `No free ${model} GPUs available`;
+                    } else {
+                        btn.title = `Show free ${model} GPUs`;
+                        if (!isMobile) {
+                            btn.addEventListener('mouseenter', () => highlightCards(stat.freeKeys));
+                            btn.addEventListener('mouseleave', clearHighlights);
+                        }
+                        btn.addEventListener('click', () => {
+                            if (selectedFreeModel === model) selectedFreeModel = null;
+                            else { selectedFreeModel = model; selectedUser = null; selectedServer = null; }
+                            updateAllActiveStates();
+                            fetchData();
+                            if (isMobile) closeMobileOffcanvas();
+                        });
+                    }
+                    container.appendChild(btn);
+                });
+            };
+
+            renderTarget('free-model-shortcuts-list', false);
+            renderTarget('mobile-free-model-shortcuts-list', true);
+        }
+
+        // ===== 用户快捷栏 =====
+        function renderUserGpuShortcuts(data) {
+            const userMap = buildUserGpuMap(data);
+            
+            const userGpus = Array.from(userMap.keys()).map(username => {
                 const gpuList = userMap.get(username) || [];
-                const uniqueGpus = [],
-                    seen = new Set();
+                const uniqueGpus = [], seen = new Set();
                 gpuList.forEach(function (gpu) {
                     const key = `${gpu.hostname}::${gpu.index}`;
                     if (!seen.has(key)) {
@@ -1140,46 +1444,63 @@
                         uniqueGpus.push(gpu);
                     }
                 });
+                return { username, uniqueGpus };
+            });
 
-                const userBtn = document.createElement('button');
-                userBtn.type = 'button';
-                userBtn.className = 'user-shortcut-btn' + (selectedUser === username ? ' active' : '');
-                userBtn.dataset.username = username;
-                userBtn.innerHTML =
-                    `<span class="user-shortcut-left"><i class="fas fa-user"></i><span class="user-shortcut-name">${escapeHtml(username)}</span></span><span class="user-gpu-count">${uniqueGpus.length} GPU${uniqueGpus.length > 1 ? 's' : ''}</span>`;
-                userBtn.title = `Show ${username} GPUs`;
-                
-                // 为单个用户绑定 Hover 事件
-                const userKeys = uniqueGpus.map(function(gpu) { return `${gpu.hostname}::${gpu.index}`; });
-                userBtn.addEventListener('mouseenter', function() { highlightCards(userKeys); });
-                userBtn.addEventListener('mouseleave', clearHighlights);
+            userGpus.sort((a, b) => {
+                if (b.uniqueGpus.length !== a.uniqueGpus.length) {
+                    return b.uniqueGpus.length - a.uniqueGpus.length; 
+                }
+                return a.username.localeCompare(b.username); 
+            });
+            
+            const renderTarget = (containerId, isMobile) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = '';
 
-                userBtn.addEventListener('click', function () {
-                    if (selectedUser === username) {
-                        selectedUser = null;
-                        selectedServer = null;
-                    } else {
-                        selectedUser = username;
-                        selectedServer = null;
+                if (userGpus.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'user-gpu-shortcuts-empty';
+                    empty.textContent = 'No active users';
+                    container.appendChild(empty);
+                    return;
+                }
+
+                userGpus.forEach(({ username, uniqueGpus }) => {
+                    const userBtn = document.createElement('button');
+                    userBtn.type = 'button';
+                    userBtn.className = 'user-shortcut-btn' + (selectedUser === username ? ' active' : '');
+                    userBtn.dataset.username = username;
+                    userBtn.innerHTML = `
+                        <span class="user-shortcut-left">
+                            <i class="fas fa-user"></i>
+                            <span class="user-shortcut-name" title="${escapeHtml(username)}">${escapeHtml(username)}</span>
+                        </span>
+                        <span class="user-gpu-count">${uniqueGpus.length} GPU${uniqueGpus.length > 1 ? 's' : ''}</span>
+                    `;
+                    userBtn.title = `Show ${username} GPUs`;
+
+                    if(!isMobile) {
+                        const userKeys = uniqueGpus.map(gpu => `${gpu.hostname}::${gpu.index}`);
+                        userBtn.addEventListener('mouseenter', () => highlightCards(userKeys));
+                        userBtn.addEventListener('mouseleave', clearHighlights);
                     }
-                    updateAllActiveStates();
-                    fetchData();
+
+                    userBtn.addEventListener('click', () => {
+                        if (selectedUser === username) selectedUser = null;
+                        else { selectedUser = username; selectedServer = null; selectedFreeModel = null; }
+                        updateAllActiveStates();
+                        fetchData();
+                        if(isMobile) closeMobileOffcanvas();
+                    });
+                    container.appendChild(userBtn);
                 });
-                container.appendChild(userBtn);
-            });
+            }
 
+            renderTarget('user-gpu-shortcuts-list', false);
+            renderTarget('mobile-user-shortcuts-list', true);
             requestAnimationFrame(updateShortcutPositions);
-        }
-
-        function updateUserShortcutActiveState() {
-            document.querySelectorAll('.user-shortcut-btn').forEach(function (btn) {
-                btn.classList.toggle('active', btn.dataset.username === selectedUser);
-            });
-        }
-
-        function updateFreeGpuShortcutActiveState() {
-            const card = document.querySelector('.user-free-gpu-card');
-            if (card) card.classList.toggle('active', selectedUser === '__FREE_GPUS__');
         }
 
         // ===== 获取数据 =====
@@ -1189,21 +1510,24 @@
                 const response = await fetch('/api/gpustat/all', { cache: 'no-store' });
                 if (!response.ok) throw new Error(`Server Error: ${response.status}`);
                 const raw = await response.json();
-                const data = normalizeNodes(raw);
 
-                // GPU Cards (传入全量数据和过滤后的数据)
+                let data = normalizeNodes(raw);
+                
+                // 核心：让数据在渲染前强制遵循侧边栏UI上的顺序
+                data = sortDataBySidebar(data);
+
                 try {
                     const displayData = applyGpuFilters(data);
                     updateCards(data, displayData);
                 } catch (e) { console.error('GPU Card update failed:', e); }
 
-                // 用户快捷栏
-                try { renderUserGpuShortcuts(data); } catch (e) { console.error('User shortcut update failed:', e); }
+                try { 
+                    renderUserGpuShortcuts(data);
+                    renderFreeModelShortcuts(data);
+                } catch (e) { console.error('Sidebar UI update failed:', e); }
 
-                // 服务器状态
                 try { updateServerShortcutStatus(data); } catch (e) { console.error('Server shortcut update failed:', e); }
 
-                // Table
                 try {
                     const displayData = applyGpuFilters(data);
                     updateTable(displayData);
@@ -1226,26 +1550,21 @@
             }
         }
 
-        // ===== GPU Cards =====
+        // ===== GPU Cards 逻辑 =====
         function updateCards(allData, displayData) {
             const container = document.getElementById('gpu-cards-container');
             if (!container || !Array.isArray(allData)) return;
 
-            // 提前提取出需要显示的 key 集合
             const visibleKeys = new Set();
             (displayData || []).forEach(function (node) {
                 const hostname = String(node.hostname || 'Unknown');
                 let gpus = Array.isArray(node.gpus) ? node.gpus : [];
-                if (gpus.length === 0 && node.error) {
-                    visibleKeys.add(`${hostname}::Err`);
-                }
-                gpus.forEach(function (gpu) {
-                    visibleKeys.add(`${hostname}::${String(gpu.index || '')}`);
-                });
+                if (gpus.length === 0 && node.error) visibleKeys.add(`${hostname}::Err`);
+                gpus.forEach(gpu => visibleKeys.add(`${hostname}::${String(gpu.index || '')}`));
             });
 
             const currentKeys = new Set();
-            let domIndex = 0; // 用来追踪 DOM 的确切顺序
+            let domIndex = 0;
 
             allData.forEach(function (node) {
                 if (!node) return;
@@ -1273,22 +1592,16 @@
                     }
                     updateGpuCard(card, node, gpu);
 
-                    // 核心修复1：强制保证所有 DOM 的物理顺序不变（跟 allData 中的顺序严丝合缝）
                     if (container.children[domIndex] !== card) {
                         container.insertBefore(card, container.children[domIndex] || null);
                     }
                     domIndex++;
-
-                    // 核心修复2：通过隐藏/显示来实现筛选，而不是粗暴地移除 DOM
-                    if (visibleKeys.has(key)) {
-                        card.classList.remove('d-none');
-                    } else {
-                        card.classList.add('d-none');
-                    }
+                    
+                    if (visibleKeys.has(key)) card.classList.remove('d-none');
+                    else card.classList.add('d-none');
                 });
             });
 
-            // 删除那些真的下线/不存在了的服务器卡片
             for (const [key, card] of gpuCardMap.entries()) {
                 if (!currentKeys.has(key)) {
                     disposeGpuCard(card);
@@ -1305,16 +1618,18 @@
             const memPercent = Number(gpu.memory) || 0;
 
             const wrapper = document.createElement('div');
-            wrapper.className = 'col-xl-3 col-md-4 col-sm-6';
+            wrapper.className = 'col-12 col-xs-6 col-sm-6 col-md-4 col-lg-3';
             wrapper.dataset.gpuKey = key;
+            wrapper.dataset.hostname = node.hostname || '';
+            wrapper.dataset.gpuIndex = gpu.index !== undefined ? String(gpu.index) : 'Err';
             wrapper.id = 'gpu-card-' + safeId(key);
 
             wrapper.innerHTML = `
                 <div class="card text-white ${colorClass} h-100 shadow-sm" data-card-color="${colorClass}">
                     <div class="card-body pb-2">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div class="fw-bold"><i class="fas fa-server me-1"></i><span class="gpu-hostname">${escapeHtml(node.hostname)}</span></div>
-                            <span class="badge bg-dark bg-opacity-25 gpu-index">${escapeHtml(String(gpu.index || ''))}</span>
+                            <div class="fw-bold text-truncate" title="${escapeHtml(node.hostname)}"><i class="fas fa-server me-1"></i><span class="gpu-hostname">${escapeHtml(node.hostname)}</span></div>
+                            <span class="badge bg-dark bg-opacity-25 gpu-index ms-1 flex-shrink-0">${escapeHtml(String(gpu.index || ''))}</span>
                         </div>
                         <div class="small text-truncate mb-3 gpu-name" title="${escapeHtml(gpu.name || '')}">${escapeHtml(gpu.name || '')}</div>
                         <div class="d-flex justify-content-between small"><span>Memory</span><span class="gpu-mem-text opacity-75">${memUsedGB}/${memTotalGB} GB</span></div>
@@ -1322,10 +1637,10 @@
                     </div>
                     <div class="card-footer text-white small bg-black bg-opacity-10 border-0">
                         <div class="row text-center g-1">
-                            <div class="col-3" title="Temp"><i class="fas fa-thermometer-half"></i><span class="gpu-temp fw-bold">${escapeHtml(String(gpu['temperature.gpu'] || '-'))}</span>°</div>
-                            <div class="col-3" title="Power"><i class="fas fa-bolt"></i><span class="gpu-power fw-bold">${escapeHtml(String(gpu['power.draw'] || '-'))}</span>W</div>
-                            <div class="col-3" title="Util"><i class="fas fa-tachometer-alt"></i><span class="gpu-util fw-bold">${escapeHtml(String(gpu['utilization.gpu'] || '-'))}</span>%</div>
-                            <div class="col-3" title="Users"><i class="fas fa-users"></i><span class="gpu-users fw-bold">${escapeHtml(String(gpu.users || gpu.user_processes || ''))}</span></div>
+                            <div class="col-3" title="Temp"><i class="fas fa-thermometer-half"></i><span class="gpu-temp fw-bold ms-1">${escapeHtml(String(gpu['temperature.gpu'] || '-'))}</span>°</div>
+                            <div class="col-3" title="Power"><i class="fas fa-bolt"></i><span class="gpu-power fw-bold ms-1">${escapeHtml(String(gpu['power.draw'] || '-'))}</span>W</div>
+                            <div class="col-3" title="Util"><i class="fas fa-tachometer-alt"></i><span class="gpu-util fw-bold ms-1">${escapeHtml(String(gpu['utilization.gpu'] || '-'))}</span>%</div>
+                            <div class="col-3" title="Users"><i class="fas fa-users"></i><span class="gpu-users fw-bold ms-1">${escapeHtml(String(gpu.users || gpu.user_processes || ''))}</span></div>
                         </div>
                     </div>
                 </div>
@@ -1333,12 +1648,8 @@
 
             const cardInner = wrapper.querySelector('.card');
             if (cardInner && typeof bootstrap !== 'undefined') {
-                wrapper._gpuTooltip = new bootstrap.Tooltip(cardInner, {
-                    html: true, title: buildTooltipContent(node,
-                        gpu)
-                });
+                wrapper._gpuTooltip = new bootstrap.Tooltip(cardInner, { html: true, title: buildTooltipContent(node, gpu) });
             }
-
             return wrapper;
         }
 
@@ -1353,6 +1664,9 @@
                 cardInner.classList.add(colorClass);
                 cardInner.dataset.cardColor = colorClass;
             }
+            
+            const isIdle = extractGpuUsers(gpu).length === 0;
+            cardInner.classList.toggle('gpu-idle', isIdle);
 
             const setText = function (selector, value) {
                 const el = wrapper.querySelector(selector);
@@ -1388,21 +1702,17 @@
             }
 
             if (wrapper._gpuTooltip) {
-                try {
-                    wrapper._gpuTooltip.setContent({ '.tooltip-inner': buildTooltipContent(node, gpu) });
-                } catch (e) { console.warn('Tooltip update failed:', e); }
+                try { wrapper._gpuTooltip.setContent({ '.tooltip-inner': buildTooltipContent(node, gpu) }); } 
+                catch (e) { console.warn('Tooltip update failed:', e); }
             }
         }
 
         function disposeGpuCard(wrapper) {
             if (!wrapper) return;
-            if (wrapper._gpuTooltip) {
-                try { wrapper._gpuTooltip.dispose(); } catch (e) { }
-            }
+            if (wrapper._gpuTooltip) { try { wrapper._gpuTooltip.dispose(); } catch (e) { } }
             wrapper.remove();
         }
 
-        // ===== 辅助 =====
         function getGpuColorClass(temp, node, gpu) {
             if (node?.error || gpu?.index === 'Err') return 'bg-secondary';
             if (temp === '-' || temp === null || temp === undefined || temp === '') return 'bg-primary';
@@ -1427,11 +1737,10 @@
         function safeId(value) { return String(value).replace(/[^a-zA-Z0-9_-]/g, '_'); }
 
         function buildTooltipContent(node, gpu) {
-            // 直接显示纯净的进程/用户信息
             return `<div class="text-start small">${escapeHtml(gpu.user_processes || gpu.users || 'None')}</div>`;
         }
 
-        // ===== Table =====
+        // ===== Table 逻辑 =====
         function updateTable(gpustats) {
             if (!dataTable) return;
             const newData = [];
@@ -1464,7 +1773,7 @@
             dataTable.draw(false);
         }
 
-        // ===== Settings =====
+        // ===== 弹窗及管理逻辑 =====
         async function loadSettings() {
             const tbody = document.getElementById('server-list-body');
             tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>';
@@ -1472,6 +1781,12 @@
                 const res = await fetch('/api/admin/servers', { cache: 'no-store' });
                 if (!res.ok) throw new Error('Failed to load servers');
                 const servers = await res.json();
+                
+                if (sortableInstance) {
+                    sortableInstance.destroy();
+                    sortableInstance = null;
+                }
+                
                 tbody.innerHTML = '';
 
                 if (selectedServer !== null && !servers.some(s => s.hostname === selectedServer)) {
@@ -1480,34 +1795,41 @@
                 renderServerShortcuts(servers);
 
                 if (servers.length === 0) {
-                    tbody.innerHTML =
-                        '<tr><td colspan="5" class="text-center text-muted py-3">No servers. Add one above.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No servers. Add one above.</td></tr>';
                     return;
                 }
 
                 servers.forEach(function (s) {
                     tbody.insertAdjacentHTML('beforeend', `
                         <tr data-host="${escapeHtml(s.hostname)}">
-                            <td class="text-center"><i class="fas fa-bars cursor-move handle"></i></td>
-                            <td class="fw-bold">${escapeHtml(s.hostname)}</td>
-                            <td>${escapeHtml(String(s.port))}</td>
-                            <td><span class="badge bg-secondary text-light">${escapeHtml(s.username)}</span></td>
-                            <td class="text-end"><button class="btn btn-outline-danger btn-sm" onclick="deleteServer('${escapeJsString(s.hostname)}')"><i class="fas fa-trash-alt"></i></button></td>
+                            <td class="text-center align-middle"><i class="fas fa-bars cursor-move handle px-2" title="Drag to reorder"></i></td>
+                            <td class="fw-bold align-middle">${escapeHtml(s.hostname)}</td>
+                            <td class="align-middle">${escapeHtml(String(s.port))}</td>
+                            <td class="align-middle"><span class="badge bg-secondary text-light">${escapeHtml(s.username)}</span></td>
+                            <td class="text-end align-middle"><button class="btn btn-outline-danger btn-sm" onclick="deleteServer('${escapeJsString(s.hostname)}')"><i class="fas fa-trash-alt"></i></button></td>
                         </tr>
                     `);
                 });
 
-                if (!sortableInstance) {
-                    sortableInstance = new Sortable(tbody, {
-                        handle: '.handle',
-                        animation: 150,
-                        ghostClass: 'sortable-ghost',
-                        onEnd: async function () { await saveOrder(); }
-                    });
-                }
+                // 设置列表的拖拽也同步主界面卡片
+                sortableInstance = new Sortable(tbody, {
+                    handle: '.handle',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onChange: function() {
+                        const rows = document.querySelectorAll('#server-list-body tr');
+                        const hostnames = Array.from(rows).map(row => row.getAttribute('data-host')).filter(Boolean);
+                        reorderGpuCardsByHostnames(hostnames);
+                    },
+                    onEnd: async function () { 
+                        const rows = document.querySelectorAll('#server-list-body tr');
+                        const hostnames = Array.from(rows).map(row => row.getAttribute('data-host')).filter(Boolean);
+                        reorderGpuCardsByHostnames(hostnames);
+                        await saveOrder(); 
+                    }
+                });
             } catch (e) {
-                tbody.innerHTML =
-                    `<tr><td colspan="5" class="text-danger">Error: ${escapeHtml(String(e))}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="text-danger">Error: ${escapeHtml(String(e))}</td></tr>`;
             }
         }
 
@@ -1525,6 +1847,7 @@
             } catch (e) {
                 console.error('Save order failed', e);
                 alert('Failed to save sort order');
+                await loadSettings(); 
             }
         }
 
@@ -1619,7 +1942,6 @@
             }
         }
 
-        // ===== 删除服务器（全局） =====
         window.deleteServer = async function (hostname) {
             if (!confirm(`Delete ${hostname}?`)) return;
             try {
@@ -1647,11 +1969,9 @@
         }
 
         function escapeJsString(value) {
-            return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\r/g, '\\r')
-                .replace(/\n/g, '\\n');
+            return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\r/g, '\\r').replace(/\n/g, '\\n');
         }
+        
     </script>
-
 </body>
-
 </html>
