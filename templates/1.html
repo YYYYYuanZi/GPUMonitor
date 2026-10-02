@@ -1,0 +1,2288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GPU Monitor</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/2.0.3/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256' viewBox='0 0 32 32'><path fill='%2380bc00' d='M12.447 12.265v-1.674q.244-.018.494-.026c4.577-.143 7.581 3.934 7.581 3.934S17.278 19 13.8 19a4.2 4.2 0 0 1-1.353-.217v-5.071c1.782.215 2.14 1 3.212 2.788l2.383-2.009a6.3 6.3 0 0 0-4.672-2.281a9 9 0 0 0-.923.055m0-5.529v2.5q.246-.02.494-.03c6.366-.214 10.513 5.221 10.513 5.221s-4.764 5.792-9.726 5.792a7.4 7.4 0 0 1-1.281-.112v1.545a9 9 0 0 0 1.067.069c4.618 0 7.958-2.358 11.192-5.15c.535.43 2.731 1.474 3.182 1.932c-3.075 2.574-10.241 4.649-14.3 4.649c-.392 0-.769-.024-1.138-.06v2.172H30V6.736Zm0 12.051v1.32c-4.271-.762-5.457-5.2-5.457-5.2a9.23 9.23 0 0 1 5.457-2.64v1.447h-.006a4.1 4.1 0 0 0-3.184 1.456s.782 2.811 3.19 3.62m-7.586-4.077a10.58 10.58 0 0 1 7.586-4.122V9.236C6.848 9.685 2 14.427 2 14.427s2.746 7.939 10.447 8.665v-1.44c-5.647-.711-7.586-6.939-7.586-6.939' /></svg>">
+
+    <style>
+        html, body {
+            min-height: 100%;
+            background-color: #212529 !important;
+            overflow-x: hidden;
+        }
+
+        #gpu-cards-container { min-height: 0; margin-bottom: 1.5rem; }
+        .gpu-card-val { font-variant-numeric: tabular-nums; }
+        .card-footer .col-3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .progress-subtle { height: 6px; background-color: rgba(255,255,255,0.15); border-radius: 3px; margin-top: 4px; }
+        .fade-in-card { animation: none !important; }
+
+        .gpu-idle { opacity: 0.8; transition: opacity 0.2s ease; }
+        .gpu-idle:hover { opacity: 1; }
+
+        .cursor-move { cursor: grab; color: #6c757d; }
+        .cursor-move:active { cursor: grabbing; }
+        .cursor-move:hover { color: #198754; }
+        .sortable-ghost { opacity: 0.4; background-color: #e9ecef; }
+
+        .btn-icon-only {
+            width: 38px; height: 38px; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+        }
+        .btn-icon-only i { transition: transform 0.4s ease; }
+        .btn-icon-only:hover { background-color: rgba(255,255,255,0.12); transform: scale(1.1); }
+
+        /* ===== 侧栏通用 ===== */
+        .server-shortcuts {
+            position: absolute; top: 76px; width: 180px;
+            max-height: calc(100vh - 96px); overflow-y: auto;
+            z-index: 1020; box-sizing: border-box;
+            background: #1b1f22; border: 1px solid #343a40;
+            border-radius: 10px; padding: 9px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.30), 0 2px 6px rgba(0,0,0,0.20);
+            backdrop-filter: blur(8px);
+            transition: right 0.2s ease, opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+        }
+        .server-shortcuts.overlap-hidden { display: none !important; }
+
+        .server-shortcuts-title {
+            color: #adb5bd; font-size: 12px; font-weight: 600;
+            padding: 5px 6px 8px; border-bottom: 1px solid #343a40;
+            margin-bottom: 8px; letter-spacing: 0.2px;
+        }
+        .server-shortcuts-title i { color: #6c757d; }
+
+        .server-shortcut-btn {
+            width: 100%; margin-bottom: 5px;
+            display: flex; align-items: center; gap: 7px;
+            padding: 7px 8px; color: #ced4da; background: #252a2e;
+            border: 1px solid #343a40; border-radius: 7px;
+            font-size: 12px; text-align: left;
+            transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+        }
+        .server-shortcut-btn:last-child { margin-bottom: 0; }
+        .server-shortcut-btn:hover { color: #fff; background: #2d3338; border-color: #495057; transform: translateX(1px); }
+        .server-shortcut-btn[data-hostname] { cursor: grab; }
+        .server-shortcut-btn[data-hostname]:active { cursor: grabbing; }
+        .server-shortcut-btn.active {
+            color: #fff; background: #198754; border-color: #198754;
+            box-shadow: 0 2px 8px rgba(25,135,84,0.28);
+        }
+        .server-shortcut-btn.active:hover { background: #157347; border-color: #157347; }
+        .server-shortcut-btn i { width: 14px; min-width: 14px; flex-shrink: 0; text-align: center; color: #868e96; }
+        .server-shortcut-btn.active i { color: #fff; }
+        .server-shortcut-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; min-width: 0; }
+
+        .server-status-dot {
+            width: 7px; height: 7px; min-width: 7px; min-height: 7px;
+            border-radius: 50%; display: inline-block; background: #6c757d;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.04);
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .server-status-dot.online { background: #20c997; box-shadow: 0 0 0 2px rgba(32,201,151,0.10), 0 0 6px rgba(32,201,151,0.55); }
+        .server-status-dot.offline { background: #dc3545; box-shadow: 0 0 0 2px rgba(220,53,69,0.10), 0 0 6px rgba(220,53,69,0.45); }
+        .server-status-dot.unknown { background: #6c757d; }
+        .server-status-dot.all-status { background: #20c997; box-shadow: 0 0 0 2px rgba(32,201,151,0.10), 0 0 6px rgba(32,201,151,0.45); }
+
+        .server-shortcuts-empty { color: #6c757d; font-size: 12px; text-align: center; padding: 10px 5px; }
+        .server-shortcuts::-webkit-scrollbar { width: 4px; }
+        .server-shortcuts::-webkit-scrollbar-track { background: transparent; }
+        .server-shortcuts::-webkit-scrollbar-thumb { background: #495057; border-radius: 4px; }
+        .server-shortcuts::-webkit-scrollbar-thumb:hover { background: #6c757d; }
+
+        .user-gpu-shortcuts {
+            position: absolute; top: 76px; width: 180px;
+            max-height: calc(100vh - 96px); overflow-y: auto;
+            z-index: 1020; box-sizing: border-box;
+            background: #1b1f22; border: 1px solid #343a40;
+            border-radius: 10px; padding: 9px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.30), 0 2px 6px rgba(0,0,0,0.20);
+            backdrop-filter: blur(8px);
+            transition: left 0.2s ease, opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+        }
+        .user-gpu-shortcuts.overlap-hidden { display: none !important; }
+
+        .user-gpu-shortcuts-title {
+            color: #adb5bd; font-size: 12px; font-weight: 600;
+            padding: 5px 6px 8px; border-bottom: 1px solid #343a40;
+            margin-bottom: 8px; letter-spacing: 0.2px;
+        }
+        .user-gpu-shortcuts-title i { color: #6c757d; }
+
+        .user-free-gpu-card {
+            width: 100%; display: block; padding: 10px 12px; margin-bottom: 7px;
+            color: #ced4da; background: #252a2e; border: 1px solid #343a40;
+            border-radius: 9px; font-size: 12px; text-align: left;
+            cursor: pointer; user-select: none; appearance: none; box-sizing: border-box;
+            transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+        }
+        .user-free-gpu-card:hover { color: #fff; background: #2d3338; border-color: #495057; }
+        .user-free-gpu-card.active { color: #fff; background: #198754; border-color: #198754; box-shadow: 0 2px 8px rgba(25,135,84,0.28); }
+        .user-free-gpu-card.active:hover { background: #157347; border-color: #157347; }
+
+        .user-free-gpu-left { display: flex; align-items: center; gap: 7px; min-width: 0; }
+        .user-free-gpu-left i { width: 14px; min-width: 14px; text-align: center; color: #20c997; }
+        .user-free-gpu-card.active .user-free-gpu-left i { color: #fff; }
+        .user-free-gpu-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 600; }
+        .user-free-gpu-count { font-size: 18px; line-height: 1.1; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .user-free-gpu-percent { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .user-free-gpu-progress { height: 5px; margin-top: 6px; background: rgba(255,255,255,0.10); border-radius: 3px; overflow: hidden; }
+        .user-free-gpu-progress-bar { height: 100%; width: 0; border-radius: 3px; background: #20c997; transition: width 0.25s ease; }
+
+        .user-shortcut-btn {
+            width: 100%; margin-bottom: 5px;
+            display: flex; align-items: center; justify-content: space-between; gap: 7px;
+            padding: 7px 8px; color: #ced4da; background: #252a2e;
+            border: 1px solid #343a40; border-radius: 7px;
+            font-size: 12px; text-align: left; font-weight: 600;
+            transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+        }
+        .user-shortcut-btn:last-child { margin-bottom: 0; }
+        .user-shortcut-btn:hover { color: #fff; background: #2d3338; border-color: #495057; }
+        .user-shortcut-btn.active { color: #fff; background: #198754; border-color: #198754; box-shadow: 0 2px 8px rgba(25,135,84,0.28); }
+        .user-shortcut-btn.active:hover { background: #157347; border-color: #157347; }
+
+        .user-free-gpu-card.empty-btn,
+        .user-shortcut-btn.empty-btn { cursor: default !important; }
+        .user-free-gpu-card.empty-btn:hover, .user-shortcut-btn.empty-btn:hover,
+        .user-free-gpu-card.empty-btn:active, .user-shortcut-btn.empty-btn:active,
+        .user-free-gpu-card.empty-btn:focus, .user-shortcut-btn.empty-btn:focus {
+            background: #252a2e !important; border-color: #343a40 !important;
+            color: #ced4da !important; box-shadow: none !important;
+            transform: none !important; outline: none !important;
+        }
+
+        .user-shortcut-left { display: flex; align-items: center; gap: 7px; min-width: 0; }
+        .user-shortcut-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .user-gpu-count { flex-shrink: 0; font-size: 11px; color: #adb5bd; white-space: nowrap; }
+        .user-shortcut-btn.active .user-gpu-count,
+        .user-shortcut-btn.active .user-gpu-count span { color: #fff !important; opacity: 1 !important; }
+        .user-gpu-shortcuts-empty { color: #6c757d; font-size: 12px; text-align: center; padding: 10px 5px; }
+        .user-gpu-shortcuts::-webkit-scrollbar { width: 4px; }
+        .user-gpu-shortcuts::-webkit-scrollbar-track { background: transparent; }
+        .user-gpu-shortcuts::-webkit-scrollbar-thumb { background: #495057; border-radius: 4px; }
+        .user-gpu-shortcuts::-webkit-scrollbar-thumb:hover { background: #6c757d; }
+
+        /* ===== 设置页面 ===== */
+        body.settings-view .server-shortcuts,
+        body.settings-view .user-gpu-shortcuts { display: none !important; }
+
+        .settings-nav button {
+            display: flex; align-items: center; width: 100%;
+            padding: 10px 12px; margin-bottom: 6px;
+            font-size: 13px; font-weight: 600;
+            color: #ced4da; background: #252a2e; border: 1px solid #343a40;
+            border-radius: 8px; text-align: left;
+            transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+        }
+        .settings-nav button:last-child { margin-bottom: 0; }
+        .settings-nav button:hover { color: #fff; background: #2d3338; border-color: #495057; }
+        .settings-nav button.active { color: #fff; background: #198754; border-color: #198754; box-shadow: 0 2px 8px rgba(25,135,84,0.28); }
+        .settings-nav button i { width: 18px; text-align: center; margin-right: 8px; }
+
+        #settings-page .form-control,
+        #settings-page .form-control:focus {
+            background-color: #252a2e; border-color: #343a40; color: #e9ecef; box-shadow: none;
+        }
+        #settings-page .form-control::placeholder { color: #6c757d; }
+        #settings-page .table-dark {
+            --bs-table-bg: transparent;
+            --bs-table-color: #dee2e6;
+            --bs-table-border-color: #343a40;
+            --bs-table-hover-bg: rgba(255,255,255,0.04);
+            --bs-table-hover-color: #fff;
+        }
+
+        @media (max-width: 899.98px) {
+            .server-shortcuts, .user-gpu-shortcuts { display: none !important; }
+        }
+        @media (min-width: 400px) and (max-width: 575.98px) { .col-xs-6 { flex: 0 0 auto; width: 50%; } }
+        @media (max-width: 575.98px) {
+            #gpu-cards-container .card-body { padding: 0.75rem; }
+            #gpu-cards-container .card-footer .row { font-size: 0.75rem; }
+            #gpu-cards-container .gpu-name { font-size: 0.85rem; margin-bottom: 0.5rem !important;}
+        }
+
+        .table { margin-bottom: 0; }
+        footer a { transition: color 0.2s ease; }
+        footer a:hover { color: #20c997 !important; }
+
+        .gpu-card-highlight > .card {
+            border-color: #0088ff !important;
+            box-shadow: 0 0 0 2px #0088ff,
+                        0 0 12px rgba(0,136,255,0.9),
+                        0 0 25px rgba(0,136,255,0.5) !important;
+            transform: translateY(-4px); z-index: 10;
+        }
+        #gpu-cards-container .card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+        }
+
+        /* =========================================================
+           浅色模式 (Light Mode)
+           ========================================================= */
+        html.light-mode,
+        body.light-mode {
+            background-color: #f1f3f5 !important;
+            color: #212529;
+        }
+
+        body.light-mode footer.bg-dark {
+            background-color: #f1f3f5 !important;
+            border-top: 1px solid #dee2e6;
+        }
+
+        /* 导航栏 */
+        body.light-mode nav.navbar.bg-dark {
+            background-color: #ffffff !important;
+            border-color: #dee2e6 !important;
+        }
+        body.light-mode .navbar-brand,
+        body.light-mode .navbar-brand b,
+        body.light-mode .navbar-brand span {
+            color: #212529 !important;
+        }
+        body.light-mode #mobile-menu-btn i {
+            color: #212529 !important;
+        }
+        body.light-mode #update-timestamp {
+            color: #6c757d !important;
+        }
+        body.light-mode .btn-outline-light {
+            color: #495057;
+            border-color: transparent;
+        }
+        body.light-mode .btn-outline-light:hover {
+            color: #212529;
+            background-color: rgba(0, 0, 0, 0.08);
+            border-color: transparent;
+        }
+        body.light-mode .btn-outline-secondary {
+            color: #495057;
+            border-color: #dee2e6;
+        }
+
+        /* 左右侧栏 */
+        body.light-mode .server-shortcuts,
+        body.light-mode .user-gpu-shortcuts {
+            background: #ffffff;
+            border-color: #dee2e6;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+        }
+        body.light-mode .server-shortcuts-title,
+        body.light-mode .user-gpu-shortcuts-title {
+            color: #495057;
+            border-color: #dee2e6;
+        }
+        body.light-mode .server-shortcuts-title i,
+        body.light-mode .user-gpu-shortcuts-title i {
+            color: #6c757d;
+        }
+
+        body.light-mode .server-shortcut-btn,
+        body.light-mode .user-shortcut-btn {
+            color: #212529;
+            background: #f8f9fa;
+            border-color: #dee2e6;
+        }
+        body.light-mode .server-shortcut-btn:hover,
+        body.light-mode .user-shortcut-btn:hover {
+            color: #000;
+            background: #e9ecef;
+            border-color: #ced4da;
+        }
+        body.light-mode .server-shortcut-btn i,
+        body.light-mode .user-shortcut-btn i {
+            color: #6c757d;
+        }
+        body.light-mode .server-shortcut-btn.active,
+        body.light-mode .user-shortcut-btn.active {
+            color: #fff !important;
+            background: #198754 !important;
+            border-color: #198754 !important;
+        }
+        body.light-mode .server-shortcut-btn.active i,
+        body.light-mode .user-shortcut-btn.active i,
+        body.light-mode .server-shortcut-btn.active .server-shortcut-name,
+        body.light-mode .user-shortcut-btn.active .user-shortcut-name,
+        body.light-mode .user-shortcut-btn.active .user-gpu-count,
+        body.light-mode .user-shortcut-btn.active .user-gpu-count span {
+            color: #fff !important;
+        }
+
+        /* Free GPUs 大卡 */
+        body.light-mode .user-free-gpu-card {
+            color: #212529;
+            background: #f8f9fa;
+            border-color: #dee2e6;
+        }
+        body.light-mode .user-free-gpu-card:hover {
+            color: #000;
+            background: #e9ecef;
+            border-color: #ced4da;
+        }
+        body.light-mode .user-free-gpu-card.active {
+            color: #fff;
+            background: #198754;
+            border-color: #198754;
+        }
+        body.light-mode .user-free-gpu-card.active .user-free-gpu-label,
+        body.light-mode .user-free-gpu-card.active .user-free-gpu-count,
+        body.light-mode .user-free-gpu-card.active .user-free-gpu-percent,
+        body.light-mode .user-free-gpu-card.active .user-free-gpu-left i {
+            color: #fff !important;
+        }
+
+        body.light-mode .user-free-gpu-card.empty-btn:hover,
+        body.light-mode .user-shortcut-btn.empty-btn:hover,
+        body.light-mode .user-free-gpu-card.empty-btn:active,
+        body.light-mode .user-shortcut-btn.empty-btn:active,
+        body.light-mode .user-free-gpu-card.empty-btn:focus,
+        body.light-mode .user-shortcut-btn.empty-btn:focus {
+            background: #f8f9fa !important;
+            border-color: #dee2e6 !important;
+            color: #212529 !important;
+        }
+
+        /* 卡片 & 表格 */
+        body.light-mode .card {
+            background-color: #ffffff;
+            border-color: #dee2e6;
+            color: #212529;
+        }
+        body.light-mode .card-header {
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
+            color: #212529;
+        }
+        body.light-mode .card-header span,
+        body.light-mode .card-title,
+        body.light-mode .card-title.text-dark {
+            color: #212529 !important;
+        }
+        body.light-mode .card-body {
+            color: #212529;
+        }
+        body.light-mode .table-striped > tbody > tr:nth-of-type(odd) > * {
+            --bs-table-accent-bg: rgba(0, 0, 0, 0.02);
+            color: #212529;
+        }
+        body.light-mode .table-bordered > :not(caption) > * > * {
+            border-color: #dee2e6;
+        }
+        body.light-mode #dataTable thead tr th {
+            color: #212529;
+            border-color: #dee2e6;
+        }
+        body.light-mode #dataTable tbody tr td {
+            color: #212529;
+            border-color: #dee2e6;
+        }
+
+        /* DataTable 控件 */
+        body.light-mode .dataTables_wrapper {
+            color: #212529;
+        }
+        body.light-mode .dataTables_wrapper .dataTables_length select,
+        body.light-mode .dataTables_wrapper .dataTables_filter input {
+            background-color: #ffffff !important;
+            border-color: #ced4da !important;
+            color: #212529 !important;
+        }
+        body.light-mode .dataTables_wrapper .dataTables_info,
+        body.light-mode .dataTables_wrapper .dataTables_length,
+        body.light-mode .dataTables_wrapper .dataTables_filter,
+        body.light-mode .dataTables_wrapper label {
+            color: #495057;
+        }
+        body.light-mode .dataTables_wrapper .pagination .page-link {
+            color: #198754;
+            background-color: #fff;
+            border-color: #dee2e6;
+        }
+        body.light-mode .dataTables_wrapper .pagination .page-item.active .page-link {
+            background-color: #198754;
+            border-color: #198754;
+            color: #fff;
+        }
+        body.light-mode .dataTables_wrapper .pagination .page-item.disabled .page-link {
+            color: #adb5bd;
+            background-color: #fff;
+            border-color: #dee2e6;
+        }
+
+        /* 设置页 */
+        body.light-mode #settings-page {
+            color: #212529;
+        }
+        body.light-mode #settings-page h4,
+        body.light-mode #settings-page h5,
+        body.light-mode #settings-page h6,
+        body.light-mode #settings-page .text-light,
+        body.light-mode #settings-page .text-white {
+            color: #212529 !important;
+        }
+        body.light-mode #settings-page .text-muted {
+            color: #6c757d !important;
+        }
+        body.light-mode #settings-page .card,
+        body.light-mode #settings-page .bg-dark {
+            background-color: #ffffff !important;
+            border-color: #dee2e6 !important;
+        }
+        body.light-mode #settings-page .border-secondary {
+            border-color: #dee2e6 !important;
+        }
+        body.light-mode #settings-page .card-title.text-success {
+            color: #198754 !important;
+        }
+        body.light-mode #settings-page .form-control {
+            background-color: #ffffff;
+            border-color: #ced4da;
+            color: #212529;
+        }
+        body.light-mode #settings-page .form-control::placeholder {
+            color: #adb5bd;
+        }
+        body.light-mode #settings-page .form-control:focus {
+            background-color: #ffffff;
+            border-color: #86b7fe;
+            color: #212529;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        body.light-mode #settings-page .form-text {
+            color: #6c757d;
+        }
+        body.light-mode #settings-page code.text-info {
+            color: #0d6efd !important;
+        }
+
+        body.light-mode .settings-nav button {
+            color: #212529;
+            background: #f8f9fa;
+            border-color: #dee2e6;
+        }
+        body.light-mode .settings-nav button:hover {
+            color: #000;
+            background: #e9ecef;
+            border-color: #ced4da;
+        }
+        body.light-mode .settings-nav button.active {
+            color: #fff;
+            background: #198754;
+            border-color: #198754;
+        }
+        body.light-mode .settings-nav button.active i {
+            color: #fff;
+        }
+
+        /* 设置页表格 */
+        body.light-mode #settings-page .table-dark {
+            --bs-table-bg: transparent;
+            --bs-table-color: #212529;
+            --bs-table-border-color: #dee2e6;
+            --bs-table-hover-bg: rgba(0, 0, 0, 0.04);
+            --bs-table-hover-color: #000;
+        }
+        body.light-mode #settings-page .table thead tr th {
+            color: #495057;
+            border-color: #dee2e6;
+        }
+        body.light-mode #settings-page .table tbody tr td {
+            color: #212529;
+            border-color: #dee2e6;
+        }
+        body.light-mode #settings-page .table .badge.bg-secondary {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        /* Offcanvas 移动端抽屉 */
+        body.light-mode .offcanvas {
+            background-color: #ffffff !important;
+            color: #212529 !important;
+            border-color: #dee2e6 !important;
+        }
+        body.light-mode .offcanvas .text-light,
+        body.light-mode .offcanvas h6 {
+            color: #212529 !important;
+        }
+        body.light-mode .offcanvas .user-gpu-shortcuts-title,
+        body.light-mode .offcanvas .server-shortcuts-title {
+            color: #495057 !important;
+            border-color: #dee2e6 !important;
+        }
+        body.light-mode .offcanvas .btn-close-white {
+            filter: none;
+        }
+        body.light-mode .offcanvas .server-shortcut-btn,
+        body.light-mode .offcanvas .user-shortcut-btn,
+        body.light-mode .offcanvas .user-free-gpu-card {
+            color: #212529;
+            background: #f8f9fa;
+            border-color: #dee2e6;
+        }
+        body.light-mode .offcanvas .server-shortcut-btn:hover,
+        body.light-mode .offcanvas .user-shortcut-btn:hover,
+        body.light-mode .offcanvas .user-free-gpu-card:hover {
+            color: #000;
+            background: #e9ecef;
+            border-color: #ced4da;
+        }
+        body.light-mode .offcanvas .server-shortcut-btn.active,
+        body.light-mode .offcanvas .user-shortcut-btn.active,
+        body.light-mode .offcanvas .user-free-gpu-card.active {
+            color: #fff !important;
+            background: #198754 !important;
+            border-color: #198754 !important;
+        }
+        body.light-mode .offcanvas .server-shortcut-btn.active i,
+        body.light-mode .offcanvas .user-shortcut-btn.active i,
+        body.light-mode .offcanvas .server-shortcut-btn.active .server-shortcut-name,
+        body.light-mode .offcanvas .user-shortcut-btn.active .user-shortcut-name,
+        body.light-mode .offcanvas .user-shortcut-btn.active .user-gpu-count {
+            color: #fff !important;
+        }
+
+        /* footer */
+        body.light-mode footer a.text-white-50 {
+            color: #6c757d !important;
+        }
+        body.light-mode footer a.text-white-50:hover {
+            color: #198754 !important;
+        }
+
+        /* 连接状态 badge */
+        body.light-mode #connection-status.bg-secondary { background-color: #6c757d !important; color: #fff !important; }
+        body.light-mode #connection-status.bg-success   { background-color: #198754 !important; color: #fff !important; }
+        body.light-mode #connection-status.bg-warning   { background-color: #ffc107 !important; color: #000 !important; }
+        body.light-mode #connection-status.bg-danger    { background-color: #dc3545 !important; color: #fff !important; }
+
+        /* Pause/Resume 按钮在 light 模式下文字稍暗一些 */
+        body.light-mode #toggle-refresh.btn-outline-primary {
+            color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        body.light-mode #toggle-refresh.btn-outline-primary:hover {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+
+        /* =========================================================
+           保护 GPU 监控卡片不受浅色模式污染 (只改文字，绝对不动背景色)
+           ========================================================= */
+        body.light-mode #gpu-cards-container .card {
+            border-color: transparent !important;
+        }
+
+        /* 统一让【所有】卡片的文字、图标在浅色模式下强制保持白色（包括黄色卡片） */
+        body.light-mode #gpu-cards-container .card,
+        body.light-mode #gpu-cards-container .card .card-body,
+        body.light-mode #gpu-cards-container .card .card-footer,
+        body.light-mode #gpu-cards-container .card .gpu-hostname,
+        body.light-mode #gpu-cards-container .card .gpu-name,
+        body.light-mode #gpu-cards-container .card .gpu-temp,
+        body.light-mode #gpu-cards-container .card .gpu-power,
+        body.light-mode #gpu-cards-container .card .gpu-util,
+        body.light-mode #gpu-cards-container .card .gpu-users,
+        body.light-mode #gpu-cards-container .card i {
+            color: #ffffff !important;
+        }
+
+    </style>
+
+    <!-- 主题预加载：避免刷新闪屏 -->
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('gpumonitor-theme') || 'dark';
+                if (t === 'light') {
+                    document.documentElement.classList.add('light-mode');
+                }
+            } catch (e) {}
+        })();
+    </script>
+</head>
+
+<body class="bg-dark">
+
+    <aside id="user-gpu-shortcuts" class="user-gpu-shortcuts">
+        <div class="user-gpu-shortcuts-title">
+            <i class="fas fa-user me-1"></i> Users
+        </div>
+        <div id="user-gpu-shortcuts-list" class="mb-3"></div>
+        <div class="user-gpu-shortcuts-title">
+            <i class="fas fa-microchip me-1"></i> Free Models
+        </div>
+        <div id="free-model-shortcuts-list"></div>
+    </aside>
+
+    <aside id="server-shortcuts" class="server-shortcuts">
+        <div class="server-shortcuts-title">
+            <i class="fas fa-server me-1"></i> Servers
+        </div>
+        <div class="mb-2 text-muted" style="font-size: 10px; text-align: center;"><i class="fas fa-info-circle me-1"></i> Drag to reorder</div>
+        <div id="server-shortcuts-list"></div>
+    </aside>
+
+    <div class="offcanvas offcanvas-start bg-dark text-white border-end border-secondary" tabindex="-1" id="mobileFilters" style="width: 280px;">
+        <div class="offcanvas-header border-bottom border-secondary py-2">
+            <h6 class="offcanvas-title fw-bold text-light"><i class="fas fa-filter me-2 text-muted"></i>Filters</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="mb-4">
+                <div class="user-gpu-shortcuts-title text-light"><i class="fas fa-user me-1"></i> Users</div>
+                <div id="mobile-user-shortcuts-list"></div>
+            </div>
+            <div class="mb-4">
+                <div class="user-gpu-shortcuts-title text-light"><i class="fas fa-microchip me-1"></i> Free Models</div>
+                <div id="mobile-free-model-shortcuts-list"></div>
+            </div>
+            <div>
+                <div class="server-shortcuts-title text-light"><i class="fas fa-server me-1"></i> Servers</div>
+                <div id="mobile-server-shortcuts-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navbar navbar-expand navbar-dark bg-dark border-bottom border-secondary sticky-top">
+        <div class="container d-flex align-items-center">
+            <button id="mobile-menu-btn" class="btn btn-outline-secondary border-0 d-none align-items-center justify-content-center me-2 p-0" type="button" 
+                data-bs-toggle="offcanvas" data-bs-target="#mobileFilters" style="width:38px; height:38px;">
+                <i class="fas fa-bars fa-lg text-light"></i>
+            </button>
+
+            <a class="navbar-brand d-flex align-items-center m-0 p-0" href="#" id="navbar-brand-btn" title="Back to dashboard">
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 32 32" class="me-2">
+                    <path fill="#80bc00"
+                        d="M12.447 12.265v-1.674q.244-.018.494-.026c4.577-.143 7.581 3.934 7.581 3.934S17.278 19 13.8 19a4.2 4.2 0 0 1-1.353-.217v-5.071c1.782.215 2.14 1 3.212 2.788l2.383-2.009a6.3 6.3 0 0 0-4.672-2.281a9 9 0 0 0-.923.055m0-5.529v2.5q.246-.02.494-.03c6.366-.214 10.513 5.221 10.513 5.221s-4.764 5.792-9.726 5.792a7.4 7.4 0 0 1-1.281-.112v1.545a9 9 0 0 0 1.067.069c4.618 0 7.958-2.358 11.192-5.15c.535.43 2.731 1.474 3.182 1.932c-3.075 2.574-10.241 4.649-14.3 4.649c-.392 0-.769-.024-1.138-.06v2.172H30V6.736Zm0 12.051v1.32c-4.271-.762-5.457-5.2-5.457-5.2a9.23 9.23 0 0 1 5.457-2.64v1.447h-.006a4.1 4.1 0 0 0-3.184 1.456s.782 2.811 3.19 3.62m-7.586-4.077a10.58 10.58 0 0 1 7.586-4.122V9.236C6.848 9.685 2 14.427 2 14.427s2.746 7.939 10.447 8.665v-1.44c-5.647-.711-7.586-6.939-7.586-6.939" />
+                </svg>
+                <b class="d-none d-sm-inline">GPU</b><span class="d-none d-sm-inline">&nbsp;Monitor</span>
+                <span class="d-sm-none fw-bold fs-5">Monitor</span>
+            </a>
+
+            <div class="d-flex align-items-center gap-2 gap-md-3 ms-auto">
+                <div class="d-flex flex-column flex-md-row align-items-end align-items-md-center gap-0 gap-md-3 text-white small">
+                    <span id="connection-status" class="badge bg-secondary mb-1 mb-md-0">Connecting...</span>
+                    <div id="update-timestamp" class="text-white-50" style="font-size: 0.75rem;">Waiting...</div>
+                </div>
+                <button class="btn btn-outline-light btn-icon-only border-0" id="settings-btn" title="Settings">
+                    <i class="fas fa-cog fa-lg"></i>
+                </button>
+                <button class="btn btn-outline-light btn-icon-only border-0" id="theme-toggle-btn" title="Toggle color theme">
+                    <i class="fas fa-sun fa-lg"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4" id="main-content">
+
+        <div id="dashboard-view">
+
+            <div class="row g-2 g-sm-3" id="gpu-cards-container"></div>
+
+            <div class="card mb-3 d-none d-md-block">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-table me-2"></i> All Nodes and GPUs</span>
+                        <button id="toggle-refresh" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-pause me-1"></i> Pause
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered table-hover" id="dataTable" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>Node</th>
+                                    <th>Device</th>
+                                    <th>Temp.</th>
+                                    <th>Util.</th>
+                                    <th>Memory (Used/Cap)</th>
+                                    <th>Power (Draw/Cap)</th>
+                                    <th>User Processes</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3 mb-4 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center flex-wrap gap-3">
+                        <h6 class="card-title mb-0 me-2 text-dark"><i class="fas fa-palette me-2"></i> Legend:</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge rounded-pill bg-danger">Hot (>75°C)</span>
+                            <span class="badge rounded-pill bg-warning text-dark">Warm (50-75°C)</span>
+                            <span class="badge rounded-pill bg-success">Normal</span>
+                            <span class="badge rounded-pill bg-primary">Cool</span>
+                            <span class="badge rounded-pill bg-primary gpu-idle">Idle (Faded)</span>
+                            <span class="badge rounded-pill bg-secondary">Offline / Error</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /#dashboard-view -->
+
+        <div id="settings-page" class="d-none">
+
+            <div class="mb-3">
+                <h4 class="mb-0 text-light"><i class="fas fa-cog me-2"></i>Settings</h4>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-3 col-lg-2">
+                    <div class="card bg-dark border-secondary">
+                        <div class="card-body p-2">
+                            <div class="settings-nav" id="settings-nav">
+                                <button type="button" class="active" data-settings-tab="servers">
+                                    <i class="fas fa-server"></i>Server Config
+                                </button>
+                                <button type="button" data-settings-tab="notifications">
+                                    <i class="fas fa-bell"></i>Notifications
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-9 col-lg-10">
+
+                    <div id="settings-tab-servers">
+                        <div class="card bg-dark border-secondary mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3 text-success">
+                                    <i class="fas fa-plus-circle me-2"></i>Add New Server
+                                </h6>
+                                <form id="add-server-form" class="row g-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">Hostname / IP</label>
+                                        <input type="text" class="form-control" id="new-host" placeholder="192.168.1.x" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small text-muted mb-1">Port</label>
+                                        <input type="number" class="form-control" id="new-port" value="22" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">Username</label>
+                                        <input type="text" class="form-control" id="new-user" placeholder="root" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">Password</label>
+                                        <input type="password" class="form-control" id="new-pass" placeholder="Password" required>
+                                    </div>
+                                    <div class="col-md-1 d-flex align-items-end">
+                                        <button type="submit" class="btn btn-success w-100" title="Add server">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="card bg-dark border-secondary mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3 text-success">
+                                    <i class="fas fa-layer-group me-2"></i>Batch Add Servers
+                                </h6>
+                                <div class="mb-2 small text-muted">
+                                    Paste one server per line in the format:
+                                    <code class="text-info">hostname,port,username,password</code>
+                                </div>
+                                <textarea id="bulk-servers-textarea" class="form-control" rows="4"
+                                    placeholder="192.168.1.10,22,root,secretpass&#10;192.168.1.11,22,root,secretpass"></textarea>
+                                <div class="form-text text-muted">Lines without 4 comma-separated values will be ignored. Existing hostnames are skipped.</div>
+                                <button id="bulk-add-btn" class="btn btn-success mt-3">
+                                    <i class="fas fa-plus me-1"></i>Add Servers
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card bg-dark border-secondary mb-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2 border-bottom border-secondary pb-2">
+                                    <h6 class="mb-0 text-light"><i class="fas fa-list me-2"></i>Managed Servers List</h6>
+                                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Drag <i class="fas fa-bars mx-1"></i> to reorder</small>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-dark table-hover align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:50px"></th>
+                                                <th>Hostname</th>
+                                                <th>Port</th>
+                                                <th>Username</th>
+                                                <th class="text-end">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="server-list-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="settings-tab-notifications" class="d-none">
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-body text-center py-5">
+                                <i class="fas fa-bell-slash fa-3x text-secondary mb-3"></i>
+                                <h5 class="text-light mb-2">Notifications</h5>
+                                <p class="text-muted mb-0">This feature is not available yet. Stay tuned.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div><!-- /#settings-page -->
+
+        <footer class="py-4 bg-dark">
+            <div class="container">
+                <div class="text-center">
+                    <small>
+                        <a href="https://github.com/YYYYYuanZi/GPUMonitor" class="text-white-50 text-decoration-none transition">
+                            <i class="fab fa-github"></i> YYYYYuanZi/GPUMonitor | 2026
+                        </a>
+                    </small>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/2.0.3/js/dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/2.0.3/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        // =========================================================
+        //   主题切换（在 DOM 就绪前先应用 body class，避免闪屏）
+        // =========================================================
+        const THEME_KEY = 'gpumonitor-theme';
+
+        function getSavedTheme() {
+            try { return localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) { return 'dark'; }
+        }
+
+        function applyTheme(theme, updateButton) {
+            const body = document.body;
+            const html = document.documentElement;
+            if (!body) return;
+
+            if (theme === 'light') {
+                html.classList.add('light-mode');
+                body.classList.add('light-mode');
+                body.classList.remove('bg-dark');
+            } else {
+                html.classList.remove('light-mode');
+                body.classList.remove('light-mode');
+                body.classList.add('bg-dark');
+            }
+
+            if (updateButton) {
+                const btn = document.getElementById('theme-toggle-btn');
+                if (btn) {
+                    btn.title = (theme === 'light') ? 'Switch to dark mode' : 'Switch to light mode';
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        // 恢复经典的太阳/月亮，并加入旋转动画
+                        icon.className = (theme === 'light') ? 'fas fa-moon fa-lg' : 'fas fa-sun fa-lg';
+                        icon.style.transform = (theme === 'light') ? 'rotate(360deg)' : 'rotate(0deg)';
+                    }
+                }
+            }
+        }
+
+        // 立即应用（默认 dark）
+        applyTheme(getSavedTheme(), false);
+
+        // =========================================================
+        //   全局变量
+        // =========================================================
+        let dataTable = null;
+        let isRefreshEnabled = true;
+        let refreshTimeout = null;
+        const REFRESH_RATE = 2000;
+
+        let sortableInstance = null;
+        let sidebarSortableInstance = null;
+
+        let selectedServer = null;
+        let selectedUser = null;
+        let selectedFreeModel = null;
+
+        let lastServerStatusData = null;
+        const gpuCardMap = new Map();
+
+        let isSettingsView = false;
+        let usingMockData = false;
+
+        const SHORTCUT_WIDTH = 180;
+        const SHORTCUT_GAP = 14;
+        const SHORTCUT_EDGE = 12;
+        const SHORTCUT_MIN_SCREEN = 900;
+
+        // ===== 显卡档次/算力权重映射表 =====
+        const GPU_MODEL_TIERS = {
+            'H200': 1200, 'H100': 1100, 'H800': 1050, 'A100': 1000,
+            'A800': 950, 'L40S': 860, 'L40': 850, 'RTX 6000 Ada': 840,
+            'RTX A6000': 820, 'RTX A5000': 780, 'L4': 750, 'A40': 740,
+            'A30': 720, 'V100': 700, 'A10': 680, 'T4': 600,
+            'RTX 5090': 590, 'RTX 4090': 580, 'RTX 4080': 550,
+            'RTX 3090 Ti': 520, 'RTX 3090': 500, 'RTX 3080': 450, 'RTX 2080 Ti': 400
+        };
+
+        function getGpuModelWeight(modelName) {
+            const cleanName = modelName.trim();
+            if (GPU_MODEL_TIERS[cleanName] !== undefined) return GPU_MODEL_TIERS[cleanName];
+            for (const [key, weight] of Object.entries(GPU_MODEL_TIERS)) {
+                if (cleanName.includes(key)) return weight;
+            }
+            return 0;
+        }
+
+        // =========================================================
+        //   模拟数据
+        // =========================================================
+        const MOCK_SERVER_SPECS = [
+            { hostname: 'gpu-node-01', port: 22, username: 'root',
+              models: ['NVIDIA A100-SXM4-80GB', 'NVIDIA A100-SXM4-80GB', 'NVIDIA A100-SXM4-80GB', 'NVIDIA A100-SXM4-80GB'] },
+            { hostname: 'gpu-node-02', port: 22, username: 'root',
+              models: ['NVIDIA H100 PCIe', 'NVIDIA H100 PCIe', 'NVIDIA H100 PCIe', 'NVIDIA H100 PCIe'] },
+            { hostname: 'gpu-node-03', port: 22, username: 'root',
+              models: ['NVIDIA L40S', 'NVIDIA L40S', 'NVIDIA L40S', 'NVIDIA L40S'] },
+            { hostname: 'gpu-node-04', port: 22, username: 'root',
+              models: ['NVIDIA GeForce RTX 4090', 'NVIDIA GeForce RTX 4090', 'NVIDIA GeForce RTX 4090', 'NVIDIA GeForce RTX 4090'] },
+            { hostname: 'gpu-node-05', port: 22, username: 'root',
+              models: ['NVIDIA GeForce RTX 3090', 'NVIDIA GeForce RTX 3090'] }
+        ];
+
+        function getMockServers() {
+            return MOCK_SERVER_SPECS.map(s => ({
+                hostname: s.hostname, port: s.port, username: s.username
+            }));
+        }
+
+        function getMockGpuData() {
+            const users = ['alice', 'bob', 'charlie', 'david', 'eve', 'frank', 'grace', 'heidi'];
+
+            return MOCK_SERVER_SPECS.map(server => {
+                const gpus = server.models.map((model, idx) => {
+                    const isIdle = Math.random() < 0.45;
+                    const total = (model.includes('A100') || model.includes('H100')) ? 81920 :
+                                  model.includes('L40S') ? 49152 :
+                                  model.includes('4090') ? 24576 : 24576;
+
+                    const used = isIdle ? 0 : Math.floor(Math.random() * (total * 0.85)) + 500;
+                    const memPercent = Math.round((used / total) * 100);
+
+                    let userProcesses = 'None';
+                    if (!isIdle) {
+                        const numUsers = Math.floor(Math.random() * 2) + 1;
+                        const selected = new Set();
+                        while (selected.size < numUsers) {
+                            selected.add(users[Math.floor(Math.random() * users.length)]);
+                        }
+                        userProcesses = Array.from(selected)
+                            .map(u => `${u}(${Math.floor(Math.random() * 9000) + 1000})`)
+                            .join(', ');
+                    }
+
+                    const temp = isIdle ? Math.floor(Math.random() * 10) + 30
+                                        : Math.floor(Math.random() * 35) + 50;
+                    const util = isIdle ? 0 : Math.floor(Math.random() * 80) + 15;
+                    const power = isIdle ? Math.floor(Math.random() * 30) + 20
+                                         : Math.floor(Math.random() * 250) + 100;
+
+                    return {
+                        index: idx,
+                        name: model,
+                        'temperature.gpu': temp,
+                        'utilization.gpu': util,
+                        'power.draw': power,
+                        'enforced.power.limit': 400,
+                        'memory.used': used,
+                        'memory.total': total,
+                        memory: memPercent,
+                        users: userProcesses,
+                        user_processes: userProcesses
+                    };
+                });
+                return { hostname: server.hostname, gpus };
+            });
+        }
+
+        // =========================================================
+        //   设置页面切换
+        // =========================================================
+        function showSettingsView() {
+            if (isSettingsView) return;
+            isSettingsView = true;
+
+            document.body.classList.add('settings-view');
+            document.getElementById('dashboard-view').classList.add('d-none');
+            document.getElementById('settings-page').classList.remove('d-none');
+
+            const menuBtn = document.getElementById('mobile-menu-btn');
+            if (menuBtn) {
+                menuBtn.classList.add('d-none');
+                menuBtn.classList.remove('d-flex');
+            }
+
+            closeMobileOffcanvas();
+            switchSettingsTab('servers');
+            loadSettings();
+
+            window.scrollTo({ top: 0, behavior: 'auto' });
+        }
+
+        function hideSettingsView() {
+            if (!isSettingsView) return;
+            isSettingsView = false;
+
+            document.body.classList.remove('settings-view');
+            document.getElementById('settings-page').classList.add('d-none');
+            document.getElementById('dashboard-view').classList.remove('d-none');
+
+            requestAnimationFrame(() => {
+                updateShortcutPositions();
+
+                if (dataTable) {
+                    try {
+                        dataTable.columns.adjust();
+                        dataTable.draw(false);
+                    } catch (e) { /* ignore */ }
+                }
+            });
+
+            window.scrollTo({ top: 0, behavior: 'auto' });
+        }
+
+        // ===== 回到初始状态：退出设置页 + 清空所有过滤 =====
+        function resetToInitial() {
+            if (isSettingsView) {
+                hideSettingsView();
+            }
+
+            if (selectedServer !== null || selectedUser !== null || selectedFreeModel !== null) {
+                selectedServer = null;
+                selectedUser = null;
+                selectedFreeModel = null;
+                updateAllActiveStates();
+                clearHighlights();
+                fetchData();
+            }
+        }
+
+        function switchSettingsTab(tab) {
+            document.querySelectorAll('#settings-nav [data-settings-tab]').forEach(function (btn) {
+                btn.classList.toggle('active', btn.dataset.settingsTab === tab);
+            });
+            const serversTab = document.getElementById('settings-tab-servers');
+            const notifyTab = document.getElementById('settings-tab-notifications');
+            if (serversTab) serversTab.classList.toggle('d-none', tab !== 'servers');
+            if (notifyTab) notifyTab.classList.toggle('d-none', tab !== 'notifications');
+        }
+
+        // ===== 卡片高亮联动 =====
+        function highlightCards(keys) {
+            clearHighlights();
+            keys.forEach(function(key) {
+                const cardWrapper = gpuCardMap.get(key);
+                if (cardWrapper) cardWrapper.classList.add('gpu-card-highlight');
+            });
+        }
+        function clearHighlights() {
+            document.querySelectorAll('.gpu-card-highlight').forEach(el => el.classList.remove('gpu-card-highlight'));
+        }
+
+        function closeMobileOffcanvas() {
+            const offcanvasEl = document.getElementById('mobileFilters');
+            if (offcanvasEl) {
+                const instance = bootstrap.Offcanvas.getInstance(offcanvasEl);
+                if (instance) instance.hide();
+            }
+        }
+
+        // ===== GPU 卡片排序 =====
+        function reorderGpuCardsByHostnames(hostnames) {
+            const container = document.getElementById('gpu-cards-container');
+            if (!container) return;
+            const cards = Array.from(container.children);
+            cards.sort((a, b) => {
+                const hostA = a.dataset.hostname;
+                const hostB = b.dataset.hostname;
+                let idxA = hostnames.indexOf(hostA); if (idxA === -1) idxA = 999;
+                let idxB = hostnames.indexOf(hostB); if (idxB === -1) idxB = 999;
+                if (idxA !== idxB) return idxA - idxB;
+                let indexA = parseInt(a.dataset.gpuIndex); if (isNaN(indexA)) indexA = 0;
+                let indexB = parseInt(b.dataset.gpuIndex); if (isNaN(indexB)) indexB = 0;
+                return indexA - indexB;
+            });
+            cards.forEach(card => container.appendChild(card));
+        }
+
+        function syncGpuCardsOrderToSidebar() {
+            const hostnames = Array.from(document.querySelectorAll('#server-shortcuts-list .server-shortcut-btn[data-hostname]'))
+                .map(btn => btn.dataset.hostname);
+            reorderGpuCardsByHostnames(hostnames);
+        }
+
+        function sortDataBySidebar(data) {
+            const uiOrder = Array.from(document.querySelectorAll('#server-shortcuts-list .server-shortcut-btn[data-hostname]'))
+                .map(btn => btn.dataset.hostname);
+            if (uiOrder.length > 0) {
+                data.sort((a, b) => {
+                    let indexA = uiOrder.indexOf(a.hostname); if (indexA === -1) indexA = 999;
+                    let indexB = uiOrder.indexOf(b.hostname); if (indexB === -1) indexB = 999;
+                    return indexA - indexB;
+                });
+            }
+            return data;
+        }
+
+        // ===== 快捷栏位置自适应 =====
+        function updateShortcutPositions() {
+            const userSidebar = document.getElementById('user-gpu-shortcuts');
+            const serverSidebar = document.getElementById('server-shortcuts');
+            const main = document.getElementById('main-content');
+            const menuBtn = document.getElementById('mobile-menu-btn');
+
+            if (!userSidebar || !serverSidebar || !main) return;
+            if (isSettingsView) return;
+
+            const vw = window.innerWidth;
+            let needMobileMenu = false;
+
+            if (vw < SHORTCUT_MIN_SCREEN) {
+                userSidebar.classList.add('overlap-hidden');
+                serverSidebar.classList.add('overlap-hidden');
+                needMobileMenu = true;
+            } else {
+                const mainRect = main.getBoundingClientRect();
+                const uW = userSidebar.offsetWidth || SHORTCUT_WIDTH;
+                const sW = serverSidebar.offsetWidth || SHORTCUT_WIDTH;
+
+                if (mainRect.left >= uW + SHORTCUT_GAP + SHORTCUT_EDGE) {
+                    userSidebar.style.left = Math.max(SHORTCUT_EDGE, mainRect.left - uW - SHORTCUT_GAP) + 'px';
+                    userSidebar.style.right = '';
+                    userSidebar.classList.remove('overlap-hidden');
+                } else {
+                    userSidebar.classList.add('overlap-hidden');
+                    userSidebar.style.left = '';
+                    needMobileMenu = true;
+                }
+
+                if (vw - mainRect.right >= sW + SHORTCUT_GAP + SHORTCUT_EDGE) {
+                    serverSidebar.style.right = Math.max(SHORTCUT_EDGE, vw - mainRect.right - sW - SHORTCUT_GAP) + 'px';
+                    serverSidebar.style.left = '';
+                    serverSidebar.classList.remove('overlap-hidden');
+                } else {
+                    serverSidebar.classList.add('overlap-hidden');
+                    serverSidebar.style.right = '';
+                    needMobileMenu = true;
+                }
+            }
+
+            if (menuBtn) {
+                if (needMobileMenu) {
+                    menuBtn.classList.remove('d-none');
+                    menuBtn.classList.add('d-flex');
+                } else {
+                    menuBtn.classList.add('d-none');
+                    menuBtn.classList.remove('d-flex');
+                }
+            }
+        }
+        window.addEventListener('resize', updateShortcutPositions);
+
+        // ===== DOM Ready =====
+        document.addEventListener('DOMContentLoaded', function () {
+            // 应用主题并同步按钮图标（此时按钮已存在）
+            applyTheme(getSavedTheme(), true);
+
+            updateShortcutPositions();
+
+            dataTable = new DataTable('#dataTable', {
+                paging: true,
+                pageLength: 25,
+                lengthChange: true,
+                searching: true,
+                info: true,
+                order: [[0, 'asc'], [1, 'asc']],
+                autoWidth: false,
+                columnDefs: [
+                    { targets: 0, width: '12%' }, { targets: 1, width: '25%' },
+                    { targets: 2, width: '8%' }, { targets: 3, width: '10%' },
+                    { targets: 4, width: '15%' }, { targets: 5, width: '10%' },
+                    { targets: 6, width: '21%' }, { targets: '_all', className: 'small align-middle' }
+                ]
+            });
+
+            document.getElementById('toggle-refresh').addEventListener('click', function () {
+                isRefreshEnabled = !isRefreshEnabled;
+                if (isRefreshEnabled) {
+                    this.innerHTML = '<i class="fas fa-pause me-1"></i> Pause';
+                    this.classList.replace('btn-outline-danger', 'btn-outline-primary');
+                    fetchData();
+                } else {
+                    this.innerHTML = '<i class="fas fa-play me-1"></i> Resume';
+                    this.classList.replace('btn-outline-primary', 'btn-outline-danger');
+                    clearTimeout(refreshTimeout);
+                }
+            });
+
+            document.getElementById('settings-btn').addEventListener('click', function () {
+                if (isSettingsView) return;
+                showSettingsView();
+            });
+
+            // ===== 主题切换 =====
+            document.getElementById('theme-toggle-btn').addEventListener('click', function () {
+                const next = document.body.classList.contains('light-mode') ? 'dark' : 'light';
+                applyTheme(next, true);
+                try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+            });
+
+            document.getElementById('navbar-brand-btn').addEventListener('click', function (e) {
+                e.preventDefault();
+                resetToInitial();
+            });
+
+            // ===== 点击整个背景空白 -> 回到初始 =====
+            document.addEventListener('click', function (e) {
+                if (e.target.closest(
+                    'button, a, input, textarea, select, label, ' +
+                    '.card, table, .dataTables_wrapper, ' +
+                    'aside, #mobileFilters, ' +
+                    '.modal, .offcanvas, .tooltip'
+                )) return;
+
+                resetToInitial();
+            });
+
+            document.querySelectorAll('#settings-nav [data-settings-tab]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    switchSettingsTab(btn.dataset.settingsTab);
+                });
+            });
+
+            document.getElementById('add-server-form').addEventListener('submit', async function (e) {
+                e.preventDefault();
+                await addServer();
+            });
+
+            document.getElementById('bulk-add-btn').addEventListener('click', async function () {
+                await addServersBulk();
+            });
+
+            loadServerShortcuts();
+            fetchData();
+        });
+
+        // ===== 数据标准化 =====
+        function normalizeGpuData(raw) {
+            if (Array.isArray(raw)) return raw;
+            if (raw && Array.isArray(raw.data)) return raw.data;
+            if (raw && Array.isArray(raw.nodes)) return raw.nodes;
+            if (raw && Array.isArray(raw.result)) return raw.result;
+            return [];
+        }
+
+        function normalizeNode(node) {
+            if (!node || typeof node !== 'object') return null;
+            let gpus = node.gpus;
+            if (!Array.isArray(gpus)) {
+                if (gpus && typeof gpus === 'object') gpus = Object.values(gpus);
+                else gpus = [];
+            }
+            return { ...node, hostname: String(node.hostname || node.host || node.node || 'Unknown'), gpus };
+        }
+
+        function normalizeNodes(raw) {
+            return normalizeGpuData(raw).map(normalizeNode).filter(Boolean);
+        }
+
+        function simplifyModelName(name) {
+            if (!name) return 'Unknown';
+            return name.replace(/NVIDIA\s+/i, '').replace(/GeForce\s+/i, '').trim();
+        }
+
+        // ===== 服务器快捷栏 =====
+        async function loadServerShortcuts() {
+            try {
+                const res = await fetch('/api/admin/servers', { cache: 'no-store' });
+                if (!res.ok) throw new Error('Failed to load servers');
+                const servers = await res.json();
+                renderServerShortcuts(Array.isArray(servers) ? servers : []);
+            } catch (e) {
+                console.warn('Server API unavailable, using mock list:', e.message);
+                renderServerShortcuts(getMockServers());
+            }
+        }
+
+        function renderServerShortcuts(servers) {
+            const renderTarget = (containerId, isMobile) => {
+                const container = document.getElementById(containerId);
+                if(!container) return;
+                container.innerHTML = '';
+
+                const allBtn = document.createElement('button');
+                allBtn.type = 'button';
+                allBtn.className = 'server-shortcut-btn' + (selectedServer === null ? ' active' : '');
+                allBtn.innerHTML = `<i class="fas fa-layer-group"></i><span class="server-shortcut-name">All Servers</span><span class="server-status-dot all-status"></span>`;
+                allBtn.title = 'Show all servers';
+
+                if(!isMobile) {
+                    allBtn.addEventListener('mouseenter', function() {
+                        highlightCards(Array.from(gpuCardMap.keys()));
+                    });
+                    allBtn.addEventListener('mouseleave', clearHighlights);
+                }
+
+                allBtn.addEventListener('click', function () {
+                    const changed = selectedServer !== null || selectedUser !== null || selectedFreeModel !== null;
+                    selectedServer = null;
+                    selectedUser = null;
+                    selectedFreeModel = null;
+                    updateAllActiveStates();
+                    if (changed) fetchData();
+                    if (isMobile) closeMobileOffcanvas();
+                });
+                container.appendChild(allBtn);
+
+                if (!servers || servers.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'server-shortcuts-empty';
+                    empty.textContent = 'No servers';
+                    container.appendChild(empty);
+                    return;
+                }
+
+                servers.forEach(function (server) {
+                    const hostname = String(server.hostname || '');
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'server-shortcut-btn' + (selectedServer === hostname ? ' active' : '');
+                    btn.dataset.hostname = hostname;
+                    btn.title = `Show ${hostname}`;
+                    btn.innerHTML = `<i class="fas fa-server"></i><span class="server-shortcut-name">${escapeHtml(hostname)}</span><span class="server-status-dot unknown" data-status-host="${escapeHtml(hostname)}"></span>`;
+
+                    if(!isMobile) {
+                        btn.addEventListener('mouseenter', function() {
+                            const serverKeys = [];
+                            for (const key of gpuCardMap.keys()) {
+                                if (key.startsWith(`${hostname}::`)) serverKeys.push(key);
+                            }
+                            highlightCards(serverKeys);
+                        });
+                        btn.addEventListener('mouseleave', clearHighlights);
+                    }
+
+                    btn.addEventListener('click', function () {
+                        if (selectedServer === hostname && selectedUser === null && selectedFreeModel === null) {
+                            selectedServer = null;
+                        } else {
+                            selectedServer = hostname;
+                            selectedUser = null;
+                            selectedFreeModel = null;
+                        }
+                        updateAllActiveStates();
+                        fetchData();
+                        if (isMobile) closeMobileOffcanvas();
+                    });
+                    container.appendChild(btn);
+                });
+
+                if (!isMobile && containerId === 'server-shortcuts-list' && servers.length > 0) {
+                    if (sidebarSortableInstance) sidebarSortableInstance.destroy();
+
+                    sidebarSortableInstance = new Sortable(container, {
+                        draggable: '.server-shortcut-btn[data-hostname]',
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        onChange: function () { syncGpuCardsOrderToSidebar(); },
+                        onEnd: async function () {
+                            syncGpuCardsOrderToSidebar();
+                            const buttons = container.querySelectorAll('.server-shortcut-btn[data-hostname]');
+                            const newOrder = Array.from(buttons).map(btn => btn.dataset.hostname).filter(Boolean);
+                            try {
+                                await fetch('/api/admin/servers/reorder', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(newOrder)
+                                });
+                                if (isSettingsView) loadSettings();
+                                fetchData();
+                            } catch (e) {
+                                console.error('Save sidebar order failed', e);
+                                loadServerShortcuts();
+                            }
+                        }
+                    });
+                }
+            };
+
+            renderTarget('server-shortcuts-list', false);
+            renderTarget('mobile-server-shortcuts-list', true);
+
+            if (lastServerStatusData) updateServerShortcutStatus(lastServerStatusData);
+            requestAnimationFrame(updateShortcutPositions);
+        }
+
+        function updateServerShortcutStatus(data) {
+            if (!Array.isArray(data)) return;
+            lastServerStatusData = data;
+            document.querySelectorAll('.server-shortcut-btn[data-hostname]').forEach(function (btn) {
+                const hostname = btn.dataset.hostname;
+                const dot = btn.querySelector('.server-status-dot');
+                if (!dot) return;
+                const node = data.find(item => String(item.hostname) === hostname);
+                if (!node) {
+                    dot.className = 'server-status-dot offline';
+                    dot.title = 'Offline / No response';
+                    return;
+                }
+                if (node.error) {
+                    dot.className = 'server-status-dot offline';
+                    dot.title = `Offline: ${node.error}`;
+                    return;
+                }
+                dot.className = 'server-status-dot online';
+                dot.title = 'Online';
+            });
+        }
+
+        function markAllServerShortcutsOffline() {
+            document.querySelectorAll('.server-status-dot[data-status-host]').forEach(function (dot) {
+                dot.className = 'server-status-dot offline';
+                dot.title = 'Offline / Monitor connection failed';
+            });
+        }
+
+        // ===== 激活状态同步 =====
+        function updateAllActiveStates() {
+            updateShortcutActiveState();
+            updateUserShortcutActiveState();
+            updateFreeGpuShortcutActiveState();
+            updateFreeModelActiveState();
+        }
+
+        function updateShortcutActiveState() {
+            document.querySelectorAll('.server-shortcut-btn').forEach(function (btn) {
+                btn.classList.remove('active');
+            });
+            if (selectedServer === null) {
+                document.querySelectorAll('#server-shortcuts-list .server-shortcut-btn:first-child, #mobile-server-shortcuts-list .server-shortcut-btn:first-child').forEach(first => {
+                    if (first) first.classList.add('active');
+                });
+                return;
+            }
+            document.querySelectorAll('.server-shortcut-btn .server-shortcut-name').forEach(function (nameEl) {
+                if (nameEl.textContent.trim() === selectedServer) {
+                    nameEl.closest('.server-shortcut-btn').classList.add('active');
+                }
+            });
+        }
+
+        function updateUserShortcutActiveState() {
+            document.querySelectorAll('.user-shortcut-btn[data-username]').forEach(function (btn) {
+                btn.classList.toggle('active', btn.dataset.username === selectedUser);
+            });
+        }
+
+        function updateFreeGpuShortcutActiveState() {
+            document.querySelectorAll('.user-free-gpu-card').forEach(card => {
+                card.classList.toggle('active', selectedUser === '__FREE_GPUS__');
+            });
+        }
+
+        function updateFreeModelActiveState() {
+            document.querySelectorAll('.user-shortcut-btn[data-freemodel]').forEach(function (btn) {
+                btn.classList.toggle('active', btn.dataset.freemodel === selectedFreeModel);
+            });
+        }
+
+        // ===== 用户解析 =====
+        function extractGpuUsers(gpu) {
+            if (!gpu) return [];
+            const raw = String(gpu.user_processes || gpu.users || '').trim();
+            if (!raw || raw === 'None' || raw === '-') return [];
+            const users = [];
+
+            const matches = raw.matchAll(/([A-Za-z_][A-Za-z0-9_.-]*)\s*\(/g);
+            for (const match of matches) {
+                if (!users.includes(match[1])) users.push(match[1]);
+            }
+
+            if (users.length === 0) {
+                const parts = raw.split(/[\n;, \t]+/);
+                for (const part of parts) {
+                    if (part && /^[A-Za-z_][A-Za-z0-9_.-]*$/.test(part)) {
+                        if (!users.includes(part)) users.push(part);
+                    }
+                }
+            }
+            return users;
+        }
+
+        function buildUserGpuMap(data) {
+            const userMap = new Map();
+            (data || []).forEach(function (node) {
+                const gpus = Array.isArray(node.gpus) ? node.gpus : [];
+                gpus.forEach(function (gpu) {
+                    extractGpuUsers(gpu).forEach(function (username) {
+                        if (!userMap.has(username)) userMap.set(username, []);
+                        userMap.get(username).push({
+                            hostname: node.hostname, index: gpu.index, name: gpu.name
+                        });
+                    });
+                });
+            });
+            return userMap;
+        }
+
+        // ===== 过滤 =====
+        function filterGpuDataByFreeGpu(data) {
+            return (data || []).map(function (node) {
+                const gpus = Array.isArray(node.gpus) ? node.gpus.filter(function (gpu) {
+                    return extractGpuUsers(gpu).length === 0;
+                }) : [];
+                return gpus.length === 0 ? null : { ...node, gpus };
+            }).filter(Boolean);
+        }
+
+        function filterGpuDataByUser(data, username) {
+            return (data || []).map(function (node) {
+                const gpus = Array.isArray(node.gpus) ? node.gpus.filter(function (gpu) {
+                    return extractGpuUsers(gpu).includes(username);
+                }) : [];
+                return gpus.length === 0 ? null : { ...node, gpus };
+            }).filter(Boolean);
+        }
+
+        function applyGpuFilters(data) {
+            let displayData = Array.isArray(data) ? data : [];
+            if (selectedServer !== null) {
+                displayData = displayData.filter(function (node) { return node.hostname === selectedServer; });
+            }
+
+            if (selectedUser === '__FREE_GPUS__') {
+                displayData = filterGpuDataByFreeGpu(displayData);
+            } else if (selectedUser !== null) {
+                displayData = filterGpuDataByUser(displayData, selectedUser);
+            } else if (selectedFreeModel !== null) {
+                displayData = displayData.map(node => {
+                    const gpus = Array.isArray(node.gpus) ? node.gpus.filter(gpu => {
+                        const shortName = simplifyModelName(gpu.name);
+                        return extractGpuUsers(gpu).length === 0 && shortName === selectedFreeModel;
+                    }) : [];
+                    return gpus.length === 0 ? null : { ...node, gpus };
+                }).filter(Boolean);
+            }
+            return displayData;
+        }
+
+        // ===== 渲染 Free Models =====
+        function renderFreeModelShortcuts(data) {
+            const modelStats = {};
+            let globalTotal = 0, globalFree = 0;
+            const globalFreeKeys = [];
+
+            (data || []).forEach(node => {
+                const gpus = Array.isArray(node.gpus) ? node.gpus : [];
+                gpus.forEach(gpu => {
+                    globalTotal++;
+                    const isFree = extractGpuUsers(gpu).length === 0;
+                    if (isFree) {
+                        globalFree++;
+                        globalFreeKeys.push(`${node.hostname}::${gpu.index}`);
+                    }
+                    const shortName = simplifyModelName(gpu.name);
+                    if (!modelStats[shortName]) {
+                        modelStats[shortName] = { total: 0, free: 0, freeKeys: [] };
+                    }
+                    modelStats[shortName].total++;
+                    if (isFree) {
+                        modelStats[shortName].free++;
+                        modelStats[shortName].freeKeys.push(`${node.hostname}::${gpu.index}`);
+                    }
+                });
+            });
+
+            const freePercent = globalTotal > 0 ? Math.round((globalFree / globalTotal) * 100) : 0;
+            const models = Object.keys(modelStats).sort((a, b) => {
+                const weightA = getGpuModelWeight(a), weightB = getGpuModelWeight(b);
+                if (weightA !== weightB) return weightB - weightA;
+                return a.localeCompare(b);
+            });
+
+            const renderTarget = (containerId, isMobile) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = '';
+
+                const freeCard = document.createElement('button');
+                freeCard.type = 'button';
+                freeCard.className = 'user-free-gpu-card' + (selectedUser === '__FREE_GPUS__' ? ' active' : '');
+                freeCard.innerHTML = `
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <span class="user-free-gpu-left"><i class="fas fa-circle-check"></i><span class="user-free-gpu-label">Free GPUs (All)</span></span>
+                        <span class="user-free-gpu-percent">${freePercent}%</span>
+                    </div>
+                    <div class="d-flex align-items-baseline justify-content-between mt-1">
+                        <span class="user-free-gpu-count">${globalFree} / ${globalTotal}</span>
+                        <span class="small opacity-75">available</span>
+                    </div>
+                    <div class="user-free-gpu-progress"><div class="user-free-gpu-progress-bar" style="width:${freePercent}%"></div></div>`;
+
+                if (globalFree === 0) {
+                    freeCard.classList.add('empty-btn');
+                    freeCard.title = `No GPUs available`;
+                } else {
+                    freeCard.title = `Show all ${globalFree} available GPUs`;
+                    if(!isMobile) {
+                        freeCard.addEventListener('mouseenter', () => highlightCards(globalFreeKeys));
+                        freeCard.addEventListener('mouseleave', clearHighlights);
+                    }
+                    freeCard.addEventListener('click', () => {
+                        if (selectedUser === '__FREE_GPUS__') selectedUser = null;
+                        else { selectedUser = '__FREE_GPUS__'; selectedServer = null; selectedFreeModel = null; }
+                        updateAllActiveStates();
+                        fetchData();
+                        if(isMobile) closeMobileOffcanvas();
+                    });
+                }
+                container.appendChild(freeCard);
+
+                if (models.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'user-gpu-shortcuts-empty';
+                    empty.textContent = 'No models detected';
+                    container.appendChild(empty);
+                    return;
+                }
+
+                models.forEach(model => {
+                    const stat = modelStats[model];
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'user-shortcut-btn' + (selectedFreeModel === model ? ' active' : '');
+                    btn.dataset.freemodel = model;
+
+                    const freeColorStyle = stat.free > 0 ? 'color: #20c997; font-weight: 600;' : 'color: #6c757d; font-weight: 600;';
+
+                    btn.innerHTML = `
+                        <span class="user-shortcut-left">
+                            <i class="fas fa-microchip" style="color: #adb5bd;"></i>
+                            <span class="user-shortcut-name" title="${escapeHtml(model)}">${escapeHtml(model)}</span>
+                        </span>
+                        <span class="user-gpu-count">
+                            <span style="${freeColorStyle}">${stat.free}</span> <span class="opacity-50">/ ${stat.total}</span>
+                        </span>
+                    `;
+
+                    if (stat.free === 0) {
+                        btn.classList.add('empty-btn');
+                        btn.title = `No free ${model} GPUs available`;
+                    } else {
+                        btn.title = `Show free ${model} GPUs`;
+                        if (!isMobile) {
+                            btn.addEventListener('mouseenter', () => highlightCards(stat.freeKeys));
+                            btn.addEventListener('mouseleave', clearHighlights);
+                        }
+                        btn.addEventListener('click', () => {
+                            if (selectedFreeModel === model) selectedFreeModel = null;
+                            else { selectedFreeModel = model; selectedUser = null; selectedServer = null; }
+                            updateAllActiveStates();
+                            fetchData();
+                            if (isMobile) closeMobileOffcanvas();
+                        });
+                    }
+                    container.appendChild(btn);
+                });
+            };
+
+            renderTarget('free-model-shortcuts-list', false);
+            renderTarget('mobile-free-model-shortcuts-list', true);
+        }
+
+        // ===== 用户快捷栏 =====
+        function renderUserGpuShortcuts(data) {
+            const userMap = buildUserGpuMap(data);
+
+            const userGpus = Array.from(userMap.keys()).map(username => {
+                const gpuList = userMap.get(username) || [];
+                const uniqueGpus = [], seen = new Set();
+                gpuList.forEach(function (gpu) {
+                    const key = `${gpu.hostname}::${gpu.index}`;
+                    if (!seen.has(key)) { seen.add(key); uniqueGpus.push(gpu); }
+                });
+                return { username, uniqueGpus };
+            });
+
+            userGpus.sort((a, b) => {
+                if (b.uniqueGpus.length !== a.uniqueGpus.length) return b.uniqueGpus.length - a.uniqueGpus.length;
+                return a.username.localeCompare(b.username);
+            });
+
+            const renderTarget = (containerId, isMobile) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = '';
+
+                if (userGpus.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'user-gpu-shortcuts-empty';
+                    empty.textContent = 'No active users';
+                    container.appendChild(empty);
+                    return;
+                }
+
+                userGpus.forEach(({ username, uniqueGpus }) => {
+                    const userBtn = document.createElement('button');
+                    userBtn.type = 'button';
+                    userBtn.className = 'user-shortcut-btn' + (selectedUser === username ? ' active' : '');
+                    userBtn.dataset.username = username;
+                    userBtn.innerHTML = `
+                        <span class="user-shortcut-left">
+                            <i class="fas fa-user"></i>
+                            <span class="user-shortcut-name" title="${escapeHtml(username)}">${escapeHtml(username)}</span>
+                        </span>
+                        <span class="user-gpu-count">${uniqueGpus.length} GPU${uniqueGpus.length > 1 ? 's' : ''}</span>
+                    `;
+                    userBtn.title = `Show ${username} GPUs`;
+
+                    if(!isMobile) {
+                        const userKeys = uniqueGpus.map(gpu => `${gpu.hostname}::${gpu.index}`);
+                        userBtn.addEventListener('mouseenter', () => highlightCards(userKeys));
+                        userBtn.addEventListener('mouseleave', clearHighlights);
+                    }
+
+                    userBtn.addEventListener('click', () => {
+                        if (selectedUser === username) selectedUser = null;
+                        else { selectedUser = username; selectedServer = null; selectedFreeModel = null; }
+                        updateAllActiveStates();
+                        fetchData();
+                        if(isMobile) closeMobileOffcanvas();
+                    });
+                    container.appendChild(userBtn);
+                });
+            }
+
+            renderTarget('user-gpu-shortcuts-list', false);
+            renderTarget('mobile-user-shortcuts-list', true);
+            requestAnimationFrame(updateShortcutPositions);
+        }
+
+        // ===== 获取数据 (带模拟回退) =====
+        async function fetchData() {
+            const statusBadge = document.getElementById('connection-status');
+            let raw;
+
+            try {
+                const response = await fetch('/api/gpustat/all', { cache: 'no-store' });
+                if (!response.ok) throw new Error(`Server Error: ${response.status}`);
+                raw = await response.json();
+                usingMockData = false;
+            } catch (error) {
+                raw = getMockGpuData();
+                usingMockData = true;
+            }
+
+            try {
+                let data = normalizeNodes(raw);
+                data = sortDataBySidebar(data);
+
+                try {
+                    const displayData = applyGpuFilters(data);
+                    updateCards(data, displayData);
+                } catch (e) { console.error('GPU Card update failed:', e); }
+
+                try {
+                    renderUserGpuShortcuts(data);
+                    renderFreeModelShortcuts(data);
+                } catch (e) { console.error('Sidebar UI update failed:', e); }
+
+                try { updateServerShortcutStatus(data); } catch (e) { console.error('Server shortcut update failed:', e); }
+
+                try {
+                    const displayData = applyGpuFilters(data);
+                    updateTable(displayData);
+                } catch (e) { console.error('Table update failed:', e); }
+
+                document.getElementById('update-timestamp').textContent = new Date().toLocaleTimeString();
+
+                if (usingMockData) {
+                    statusBadge.className = 'badge bg-warning text-dark';
+                    statusBadge.textContent = 'Demo Mode';
+                } else {
+                    statusBadge.className = 'badge bg-success';
+                    statusBadge.textContent = 'Connected';
+                }
+            } catch (error) {
+                console.error('Data processing failed:', error);
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.textContent = 'Error';
+            } finally {
+                if (isRefreshEnabled) {
+                    clearTimeout(refreshTimeout);
+                    refreshTimeout = setTimeout(fetchData, REFRESH_RATE);
+                }
+            }
+        }
+
+        // ===== GPU Cards 逻辑 =====
+        function updateCards(allData, displayData) {
+            const container = document.getElementById('gpu-cards-container');
+            if (!container || !Array.isArray(allData)) return;
+
+            const visibleKeys = new Set();
+            (displayData || []).forEach(function (node) {
+                const hostname = String(node.hostname || 'Unknown');
+                let gpus = Array.isArray(node.gpus) ? node.gpus : [];
+                if (gpus.length === 0 && node.error) visibleKeys.add(`${hostname}::Err`);
+                gpus.forEach(gpu => visibleKeys.add(`${hostname}::${String(gpu.index || '')}`));
+            });
+
+            const currentKeys = new Set();
+            let domIndex = 0;
+
+            allData.forEach(function (node) {
+                if (!node) return;
+                const hostname = String(node.hostname || 'Unknown');
+                let gpus = Array.isArray(node.gpus) ? node.gpus : [];
+
+                if (gpus.length === 0 && node.error) {
+                    gpus = [{
+                        index: 'Err', name: node.error, 'temperature.gpu': '-', 'utilization.gpu': '-',
+                        'power.draw': '-', 'memory.used': 0, 'memory.total': 0, memory: 0, users: 'Connection Error',
+                        user_processes: 'Connection Error'
+                    }];
+                }
+
+                gpus.forEach(function (gpu) {
+                    if (!gpu) return;
+                    const index = String(gpu.index || '');
+                    const key = `${hostname}::${index}`;
+                    currentKeys.add(key);
+
+                    let card = gpuCardMap.get(key);
+                    if (!card) {
+                        card = createGpuCard(node, gpu, key);
+                        gpuCardMap.set(key, card);
+                    }
+                    updateGpuCard(card, node, gpu);
+
+                    if (container.children[domIndex] !== card) {
+                        container.insertBefore(card, container.children[domIndex] || null);
+                    }
+                    domIndex++;
+
+                    if (visibleKeys.has(key)) card.classList.remove('d-none');
+                    else card.classList.add('d-none');
+                });
+            });
+
+            for (const [key, card] of gpuCardMap.entries()) {
+                if (!currentKeys.has(key)) {
+                    disposeGpuCard(card);
+                    gpuCardMap.delete(key);
+                }
+            }
+        }
+
+        function createGpuCard(node, gpu, key) {
+            const temp = gpu['temperature.gpu'];
+            const colorClass = getGpuColorClass(temp, node, gpu);
+            const memUsedGB = getMemoryUsedGB(gpu);
+            const memTotalGB = getMemoryTotalGB(gpu);
+            const memPercent = Number(gpu.memory) || 0;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'col-12 col-xs-6 col-sm-6 col-md-4 col-lg-3';
+            wrapper.dataset.gpuKey = key;
+            wrapper.dataset.hostname = node.hostname || '';
+            wrapper.dataset.gpuIndex = gpu.index !== undefined ? String(gpu.index) : 'Err';
+            wrapper.id = 'gpu-card-' + safeId(key);
+
+            wrapper.innerHTML = `
+                <div class="card text-white ${colorClass} h-100 shadow-sm" data-card-color="${colorClass}">
+                    <div class="card-body pb-2">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="fw-bold text-truncate" title="${escapeHtml(node.hostname)}"><i class="fas fa-server me-1"></i><span class="gpu-hostname">${escapeHtml(node.hostname)}</span></div>
+                            <span class="badge bg-dark bg-opacity-25 gpu-index ms-1 flex-shrink-0">${escapeHtml(String(gpu.index || ''))}</span>
+                        </div>
+                        <div class="small text-truncate mb-3 gpu-name" title="${escapeHtml(gpu.name || '')}">${escapeHtml(gpu.name || '')}</div>
+                        <div class="d-flex justify-content-between small"><span>Memory</span><span class="gpu-mem-text opacity-75">${memUsedGB}/${memTotalGB} GB</span></div>
+                        <div class="progress progress-subtle"><div class="progress-bar bg-light gpu-memory-progress" role="progressbar" style="width:${memPercent}%"></div></div>
+                    </div>
+                    <div class="card-footer text-white small bg-black bg-opacity-10 border-0">
+                        <div class="row text-center g-1">
+                            <div class="col-3" title="Temp"><i class="fas fa-thermometer-half"></i><span class="gpu-temp fw-bold ms-1">${escapeHtml(String(gpu['temperature.gpu'] || '-'))}</span>°</div>
+                            <div class="col-3" title="Power"><i class="fas fa-bolt"></i><span class="gpu-power fw-bold ms-1">${escapeHtml(String(gpu['power.draw'] || '-'))}</span>W</div>
+                            <div class="col-3" title="Util"><i class="fas fa-tachometer-alt"></i><span class="gpu-util fw-bold ms-1">${escapeHtml(String(gpu['utilization.gpu'] || '-'))}</span>%</div>
+                            <div class="col-3" title="Users"><i class="fas fa-users"></i><span class="gpu-users fw-bold ms-1">${escapeHtml(String(gpu.users || gpu.user_processes || ''))}</span></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const cardInner = wrapper.querySelector('.card');
+            if (cardInner && typeof bootstrap !== 'undefined') {
+                wrapper._gpuTooltip = new bootstrap.Tooltip(cardInner, { html: true, title: buildTooltipContent(node, gpu) });
+            }
+            return wrapper;
+        }
+
+        function updateGpuCard(wrapper, node, gpu) {
+            if (!wrapper) return;
+            const cardInner = wrapper.querySelector('.card');
+            if (!cardInner) return;
+
+            const colorClass = getGpuColorClass(gpu['temperature.gpu'], node, gpu);
+            if (cardInner.dataset.cardColor !== colorClass) {
+                cardInner.classList.remove('bg-primary', 'bg-success', 'bg-warning', 'bg-danger', 'bg-secondary');
+                cardInner.classList.add(colorClass);
+                cardInner.dataset.cardColor = colorClass;
+            }
+
+            const isIdle = extractGpuUsers(gpu).length === 0;
+            cardInner.classList.toggle('gpu-idle', isIdle);
+
+            const setText = function (selector, value) {
+                const el = wrapper.querySelector(selector);
+                if (el && el.textContent.trim() !== String(value)) el.textContent = String(value);
+            };
+
+            setText('.gpu-hostname', node.hostname || 'Unknown');
+            const nameEl = wrapper.querySelector('.gpu-name');
+            if (nameEl) {
+                const name = String(gpu.name || '');
+                if (nameEl.textContent.trim() !== name) {
+                    nameEl.textContent = name;
+                    nameEl.title = name;
+                }
+            }
+            setText('.gpu-index', String(gpu.index || ''));
+            setText('.gpu-temp', String(gpu['temperature.gpu'] || '-'));
+            setText('.gpu-power', String(gpu['power.draw'] || '-'));
+            setText('.gpu-util', String(gpu['utilization.gpu'] || '-'));
+            setText('.gpu-users', String(gpu.users || gpu.user_processes || ''));
+
+            const memUsedGB = getMemoryUsedGB(gpu);
+            const memTotalGB = getMemoryTotalGB(gpu);
+            const memText = `${memUsedGB}/${memTotalGB} GB`;
+            const memTextEl = wrapper.querySelector('.gpu-mem-text');
+            if (memTextEl && memTextEl.textContent.trim() !== memText) memTextEl.textContent = memText;
+
+            const memPercent = Number(gpu.memory) || 0;
+            const progress = wrapper.querySelector('.gpu-memory-progress');
+            if (progress) {
+                const width = Math.max(0, Math.min(100, memPercent)) + '%';
+                if (progress.style.width !== width) progress.style.width = width;
+            }
+
+            if (wrapper._gpuTooltip) {
+                try { wrapper._gpuTooltip.setContent({ '.tooltip-inner': buildTooltipContent(node, gpu) }); }
+                catch (e) { /* ignore */ }
+            }
+        }
+
+        function disposeGpuCard(wrapper) {
+            if (!wrapper) return;
+            if (wrapper._gpuTooltip) { try { wrapper._gpuTooltip.dispose(); } catch (e) { } }
+            wrapper.remove();
+        }
+
+        function getGpuColorClass(temp, node, gpu) {
+            if (node?.error || gpu?.index === 'Err') return 'bg-secondary';
+            if (temp === '-' || temp === null || temp === undefined || temp === '') return 'bg-primary';
+            const n = Number(temp);
+            if (Number.isNaN(n)) return 'bg-primary';
+            if (n > 75) return 'bg-danger';
+            if (n > 50) return 'bg-warning';
+            if (n > 25) return 'bg-success';
+            return 'bg-primary';
+        }
+
+        function getMemoryUsedGB(gpu) {
+            const v = Number(gpu?.['memory.used']);
+            return (Number.isFinite(v) && v > 0) ? (v / 1024).toFixed(1) : '0.0';
+        }
+
+        function getMemoryTotalGB(gpu) {
+            const v = Number(gpu?.['memory.total']);
+            return (Number.isFinite(v) && v > 0) ? (v / 1024).toFixed(0) : '0';
+        }
+
+        function safeId(value) { return String(value).replace(/[^a-zA-Z0-9_-]/g, '_'); }
+
+        function buildTooltipContent(node, gpu) {
+            return `<div class="text-start small">${escapeHtml(gpu.user_processes || gpu.users || 'None')}</div>`;
+        }
+
+        // ===== Table 逻辑 =====
+        function updateTable(gpustats) {
+            if (!dataTable) return;
+            const newData = [];
+            (gpustats || []).forEach(function (node) {
+                const gpus = Array.isArray(node.gpus) ? node.gpus : [];
+                if (gpus.length > 0) {
+                    gpus.forEach(function (gpu) {
+                        const util = Number(gpu['utilization.gpu']) || 0;
+                        newData.push([
+                            escapeHtml(node.hostname),
+                            `[${escapeHtml(String(gpu.index || ''))}] ${escapeHtml(gpu.name || '')}`,
+                            `${escapeHtml(String(gpu['temperature.gpu'] || '-'))}°C`,
+                            `<div class="progress" style="height:20px;position:relative;"><div class="progress-bar bg-success" role="progressbar" style="width:${Math.max(0, Math.min(100, util))}%"></div><span style="position:absolute;width:100%;text-align:center;color:black;font-size:0.8rem;line-height:20px;">${escapeHtml(String(gpu['utilization.gpu'] || '-'))}%</span></div>`,
+                            `${escapeHtml(String(gpu.memory || 0))}% <span class="text-muted small">(${escapeHtml(String(gpu['memory.used'] || 0))} / ${escapeHtml(String(gpu['memory.total'] || 0))})</span>`,
+                            `${escapeHtml(String(gpu['power.draw'] || '-'))} / ${escapeHtml(String(gpu['enforced.power.limit'] || '-'))} W`,
+                            `<span class="text-truncate d-block" style="max-width:400px;" title="${escapeHtml(gpu.user_processes || gpu.users || '')}">${escapeHtml(gpu.user_processes || gpu.users || '')}</span>`
+                        ]);
+                    });
+                } else if (node.error) {
+                    newData.push([
+                        escapeHtml(node.hostname),
+                        `<span class="text-danger"><i class="fas fa-exclamation-triangle"></i> Error</span>`,
+                        '-', '-', '-', '-',
+                        `<span class="text-danger small">${escapeHtml(node.error)}</span>`
+                    ]);
+                }
+            });
+            dataTable.clear();
+            dataTable.rows.add(newData);
+            dataTable.draw(false);
+        }
+
+        // ===== 设置页：服务器管理 =====
+        async function loadSettings() {
+            const tbody = document.getElementById('server-list-body');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Loading...</td></tr>';
+
+            let servers = [];
+            let isMock = false;
+
+            try {
+                const res = await fetch('/api/admin/servers', { cache: 'no-store' });
+                if (!res.ok) throw new Error('Failed to load servers');
+                servers = await res.json();
+                if (!Array.isArray(servers)) servers = [];
+            } catch (e) {
+                console.warn('Settings API unavailable, using mock list:', e.message);
+                servers = getMockServers();
+                isMock = true;
+            }
+
+            try {
+                if (sortableInstance) {
+                    sortableInstance.destroy();
+                    sortableInstance = null;
+                }
+
+                tbody.innerHTML = '';
+
+                if (selectedServer !== null && !servers.some(s => s.hostname === selectedServer)) {
+                    selectedServer = null;
+                }
+                renderServerShortcuts(servers);
+
+                if (servers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No servers. Add one above.</td></tr>';
+                    return;
+                }
+
+                servers.forEach(function (s) {
+                    tbody.insertAdjacentHTML('beforeend', `
+                        <tr data-host="${escapeHtml(s.hostname)}">
+                            <td class="text-center align-middle"><i class="fas fa-bars cursor-move handle px-2" title="Drag to reorder"></i></td>
+                            <td class="fw-bold align-middle">${escapeHtml(s.hostname)}</td>
+                            <td class="align-middle">${escapeHtml(String(s.port))}</td>
+                            <td class="align-middle"><span class="badge bg-secondary text-light">${escapeHtml(s.username)}</span></td>
+                            <td class="text-end align-middle"><button class="btn btn-outline-danger btn-sm" onclick="deleteServer('${escapeJsString(s.hostname)}')"><i class="fas fa-trash-alt"></i></button></td>
+                        </tr>
+                    `);
+                });
+
+                if (!isMock) {
+                    sortableInstance = new Sortable(tbody, {
+                        handle: '.handle',
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        onChange: function() {
+                            const rows = document.querySelectorAll('#server-list-body tr');
+                            const hostnames = Array.from(rows).map(row => row.getAttribute('data-host')).filter(Boolean);
+                            reorderGpuCardsByHostnames(hostnames);
+                        },
+                        onEnd: async function () {
+                            const rows = document.querySelectorAll('#server-list-body tr');
+                            const hostnames = Array.from(rows).map(row => row.getAttribute('data-host')).filter(Boolean);
+                            reorderGpuCardsByHostnames(hostnames);
+                            await saveOrder();
+                        }
+                    });
+                }
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-danger py-3">Error: ${escapeHtml(String(e))}</td></tr>`;
+            }
+        }
+
+        async function saveOrder() {
+            const rows = document.querySelectorAll('#server-list-body tr');
+            const newOrder = Array.from(rows).map(row => row.getAttribute('data-host')).filter(Boolean);
+            try {
+                await fetch('/api/admin/servers/reorder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newOrder)
+                });
+                await loadServerShortcuts();
+                fetchData();
+            } catch (e) {
+                console.error('Save order failed', e);
+                alert('Failed to save sort order');
+                await loadSettings();
+            }
+        }
+
+        async function addServer() {
+            const btn = document.querySelector('#add-server-form button');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            const payload = {
+                hostname: document.getElementById('new-host').value.trim(),
+                port: document.getElementById('new-port').value,
+                username: document.getElementById('new-user').value.trim(),
+                password: document.getElementById('new-pass').value
+            };
+
+            try {
+                const res = await fetch('/api/admin/servers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    document.getElementById('add-server-form').reset();
+                    await loadSettings();
+                    await loadServerShortcuts();
+                    fetchData();
+                } else {
+                    const data = await res.json();
+                    alert('Error: ' + (data.error || 'Unknown'));
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Connection error (Demo mode: 无法真正保存)');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        async function addServersBulk() {
+            const btn = document.getElementById('bulk-add-btn');
+            const originalHtml = btn.innerHTML;
+            const textarea = document.getElementById('bulk-servers-textarea');
+            const rawLines = textarea.value.trim().split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+
+            if (rawLines.length === 0) { alert('请先输入要添加的服务器。'); return; }
+
+            const servers = [];
+            rawLines.forEach(function (line) {
+                const parts = line.split(',').map(part => part.trim());
+                if (parts.length !== 4) return;
+                const [hostname, port, username, password] = parts;
+                if (hostname && port && username && password) {
+                    servers.push({ hostname, port, username, password });
+                }
+            });
+
+            if (servers.length === 0) {
+                alert('未找到有效的服务器行，请确保每行格式为 hostname,port,username,password。');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+
+            try {
+                const res = await fetch('/api/admin/servers/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ servers })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    let message = `成功添加 ${data.added} 台服务器。`;
+                    if (data.skipped && data.skipped.length) message += `\n已跳过重复主机: ${data.skipped.join(', ')}`;
+                    if (data.invalid) message += `\n无效条目: ${data.invalid}`;
+                    alert(message);
+                    textarea.value = '';
+                    await loadSettings();
+                    await loadServerShortcuts();
+                    fetchData();
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown'));
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Connection error (Demo mode: 无法真正保存)');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        window.deleteServer = async function (hostname) {
+            if (!confirm(`Delete ${hostname}?`)) return;
+            try {
+                const response = await fetch('/api/admin/servers', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hostname })
+                });
+                if (!response.ok) throw new Error('Delete failed');
+                if (selectedServer === hostname) selectedServer = null;
+                await loadSettings();
+                await loadServerShortcuts();
+                fetchData();
+            } catch (e) {
+                console.error(e);
+                alert('Error deleting (Demo mode: 无法真正删除)');
+            }
+        };
+
+        // ===== 转义 =====
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value == null ? '' : String(value);
+            return div.innerHTML;
+        }
+
+        function escapeJsString(value) {
+            return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\r/g, '\\r').replace(/\n/g, '\\n');
+        }
+    </script>
+</body>
+</html>
