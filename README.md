@@ -1,4 +1,4 @@
-# GPU Monitor (Agentless SSH 版)
+<img width="2940" height="1594" alt="image" src="https://github.com/user-attachments/assets/02973b76-c645-46ef-9efb-3e3c1fcae2c8" /># GPU Monitor (Agentless SSH 版)
 
 [![Python](https://img.shields.io/badge/Python-3.9%2B-green)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-2.x-blue)](https://flask.palletsprojects.com/)
@@ -32,9 +32,13 @@
 
 ## 📸 截图预览
 
-<img width="2940" height="1662" alt="dashboard" src="https://github.com/user-attachments/assets/df3c6a3a-544e-40aa-ad4d-e7bf325acb3a" />
+<img width="2940" height="1594" alt="image" src="https://github.com/user-attachments/assets/b978f353-1367-4adc-8cf3-d69b34eca768" />
 
-<img width="2940" height="1662" alt="settings" src="https://github.com/user-attachments/assets/bf889d8b-4a09-403d-9935-002f659ab54e" />
+<img width="2940" height="1594" alt="image" src="https://github.com/user-attachments/assets/64bd2052-c37a-41ad-bf32-5eae75bdb32b" />
+
+<img width="2940" height="1594" alt="image" src="https://github.com/user-attachments/assets/44fb29bc-59ac-4dec-a282-540d681b91be" />
+
+<img width="2940" height="1594" alt="image" src="https://github.com/user-attachments/assets/7d9c4be3-0c79-4d58-b16c-5fcbe682cbec" />
 
 ---
 
