@@ -1,4 +1,4 @@
-<img width="2940" height="1594" alt="image" src="https://github.com/user-attachments/assets/02973b76-c645-46ef-9efb-3e3c1fcae2c8" /># GPU Monitor (Agentless SSH 版)
+# GPU Monitor (Agentless SSH 版)
 
 [![Python](https://img.shields.io/badge/Python-3.9%2B-green)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-2.x-blue)](https://flask.palletsprojects.com/)
