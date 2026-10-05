@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>访问统计 · GPU Monitor</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<style>
+    html, body {
+        min-height: 100%;
+        background: #f1f3f5;
+        color: #212529;
+    }
+    .page-title { font-weight: 700; letter-spacing: .2px; }
+
+    /* ===== KPI 卡片：左侧彩色竖条 + 数字与图标同色 ===== */
+    .stat-card {
+        position: relative;
+        border: none;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
+        background: #fff;
+        padding: 18px 18px 18px 22px;
+        overflow: hidden;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(0,0,0,.09), 0 2px 4px rgba(0,0,0,.05);
+    }
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 4px;
+        background: var(--accent, #0d6efd);
+        border-top-left-radius: 14px;
+        border-bottom-left-radius: 14px;
+    }
+    .stat-card .stat-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: #6c757d;
+    }
+    .stat-card .stat-value {
+        font-size: clamp(22px, 2.6vw, 32px);
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.05;
+        color: var(--accent, #0d6efd);
+    }
+    .stat-card .stat-sub {
+        font-size: 11.5px;
+        color: #94a3b8;
+        margin-top: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .stat-card .stat-icon {
+        width: 42px; height: 42px;
+        border-radius: 12px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    .stat-card.accent-blue   { --accent: #0d6efd; }
+    .stat-card.accent-green  { --accent: #198754; }
+    .stat-card.accent-orange { --accent: #f59e0b; }
+    .stat-card.accent-cyan   { --accent: #06b6d4; }
+    .stat-card.accent-purple { --accent: #8b5cf6; }
+    .stat-card.accent-pink   { --accent: #ec4899; }
+
+    /* ===== 图表卡片 ===== */
+    .card-section {
+        background: #fff;
+        border: none;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
+    }
+    .card-section .card-header {
+        background: #fff;
+        border-bottom: 1px solid #eef0f2;
+        font-weight: 700;
+        border-top-left-radius: 14px !important;
+        border-top-right-radius: 14px !important;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .chart-toolbar {
+        display: inline-flex;
+        background: #f1f3f5;
+        border-radius: 8px;
+        padding: 2px;
+        gap: 2px;
+    }
+    .chart-toolbar button {
+        border: none;
+        background: transparent;
+        color: #6c757d;
+        font-size: 11.5px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background .15s, color .15s;
+    }
+    .chart-toolbar button:hover { color: #212529; }
+    .chart-toolbar button.active {
+        background: #fff;
+        color: #198754;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+
+    /* ===== 表格 ===== */
+    .table thead th {
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        color: #6c757d;
+        border-bottom-color: #e9ecef;
+        white-space: nowrap;
+        background: #fafbfc;
+    }
+    .table tbody td {
+        font-size: 13px;
+        vertical-align: middle;
+        position: relative;
+    }
+    .table tbody tr:hover td { background: #f8fafc; }
+    .table tbody tr:hover td:first-child::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 3px;
+        background: #198754;
+        border-radius: 2px;
+    }
+
+    /* ===== 标签 ===== */
+    .badge-device {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 999px;
+    }
+    .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 12px;
+    }
+    .ip-pill {
+        display: inline-block;
+        padding: 1px 7px;
+        border-radius: 999px;
+        background: #eef2ff;
+        color: #3730a3;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 11.5px;
+        font-weight: 600;
+    }
+    .lang-pill {
+        display: inline-block;
+        padding: 1px 7px;
+        border-radius: 999px;
+        background: #ecfdf5;
+        color: #047857;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .tz-text { color: #94a3b8; font-size: 11px; }
+
+    .loading {
+        text-align: center;
+        padding: 40px 0;
+        color: #adb5bd;
+    }
+    .chart-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #adb5bd;
+        font-size: 13px;
+    }
+    .chart-empty i { margin-right: 6px; }
+
+    /* ===== 来源 Top 列表 ===== */
+    .source-list { list-style: none; padding: 0; margin: 0; }
+    .source-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 4px;
+        border-bottom: 1px dashed #eef0f2;
+        font-size: 13px;
+    }
+    .source-list li:last-child { border-bottom: none; }
+    .source-list .source-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 70%;
+        color: #334155;
+    }
+    .source-list .source-count {
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #198754;
+        background: #ecfdf5;
+        padding: 1px 8px;
+        border-radius: 999px;
+        font-size: 11.5px;
+    }
+
+    #tableFilter { width: 240px; }
+
+    @media (max-width: 575.98px) {
+        .stat-card { padding: 14px 14px 14px 18px; }
+        .stat-card .stat-icon { width: 34px; height: 34px; font-size: 14px; }
+        #tableFilter { width: 100%; }
+        .table-toolbar { width: 100%; }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container py-4 py-md-5">
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+        <div>
+            <h1 class="h3 page-title mb-1">
+                <i class="fas fa-chart-line text-success me-2"></i>访问统计
+            </h1>
+            <div class="text-muted small">
+                数据来源：<span class="mono">/</span> 页面加载上报 · 最近刷新 <span id="lastUpdated">—</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" id="refreshBtn">
+                <i class="fas fa-rotate me-1"></i>刷新
+            </button>
+            <a class="btn btn-sm btn-outline-success" href="/">
+                <i class="fas fa-arrow-left me-1"></i>返回监控
+            </a>
+        </div>
+    </div>
+
+    <!-- ===== KPI ===== -->
+    <div class="row g-3 g-md-4 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card accent-blue h-100">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <div class="stat-label">总访问次数</div>
+                        <div class="stat-value mt-2" id="kpiTotal">—</div>
+                        <div class="stat-sub" id="kpiTotalSub">—</div>
+                    </div>
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card accent-green h-100">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <div class="stat-label">独立 IP</div>
+                        <div class="stat-value mt-2" id="kpiUniqueIP">—</div>
+                        <div class="stat-sub" id="kpiUniqueIPSub">—</div>
+                    </div>
+                    <div class="stat-icon bg-success bg-opacity-10 text-success">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card accent-orange h-100">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <div class="stat-label">今日访问</div>
+                        <div class="stat-value mt-2" id="kpiToday">—</div>
+                        <div class="stat-sub" id="kpiTodaySub">—</div>
+                    </div>
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card accent-cyan h-100">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <div class="stat-label">当前在线（5 分钟）</div>
+                        <div class="stat-value mt-2" id="kpiOnline">—</div>
+                        <div class="stat-sub" id="kpiOnlineSub">—</div>
+                    </div>
+                    <div class="stat-icon bg-info bg-opacity-10 text-info">
+                        <i class="fas fa-signal"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 图表：趋势 + 设备 ===== -->
+    <div class="row g-3 g-md-4 mb-4">
+        <div class="col-12 col-lg-8">
+            <div class="card-section h-100">
+                <div class="card-header">
+                    <span><i class="fas fa-chart-column text-success me-2"></i>访问趋势</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small" id="trendTotal">—</span>
+                        <div class="chart-toolbar" id="trendRange">
+                            <button data-range="24h">24 小时</button>
+                            <button data-range="7d" class="active">7 天</button>
+                            <button data-range="14d">14 天</button>
+                            <button data-range="30d">30 天</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body" style="height: 300px;">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="card-section h-100">
+                <div class="card-header">
+                    <i class="fas fa-mobile-screen text-success me-2"></i>设备类型
+                </div>
+                <div class="card-body" style="height: 300px;">
+                    <canvas id="deviceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 第二行：来源 + UA ===== -->
+    <div class="row g-3 g-md-4 mb-4">
+        <div class="col-12 col-lg-4">
+            <div class="card-section h-100">
+                <div class="card-header">
+                    <i class="fas fa-share-nodes text-success me-2"></i>访问来源 Top
+                </div>
+                <div class="card-body">
+                    <ul class="source-list" id="sourceList">
+                        <li><span class="text-muted small">加载中...</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-8">
+            <div class="card-section h-100">
+                <div class="card-header">
+                    <i class="fas fa-globe text-success me-2"></i>浏览器 / OS 分布
+                </div>
+                <div class="card-body" style="height: 280px;">
+                    <canvas id="uaChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 表格 ===== -->
+    <div class="card-section mb-4">
+        <div class="card-header">
+            <span><i class="fas fa-list text-success me-2"></i>最近访问明细</span>
+            <div class="d-flex align-items-center gap-2 flex-wrap table-toolbar">
+                <input id="tableFilter" type="search" class="form-control form-control-sm"
+                       placeholder="过滤 IP / 设备 / 时间..." autocomplete="off">
+                <select id="tableLimit" class="form-select form-select-sm" style="width: auto;">
+                    <option value="50" selected>最近 50 条</option>
+                    <option value="100">最近 100 条</option>
+                    <option value="300">最近 300 条</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 160px;">时间</th>
+                        <th style="width: 120px;">IP</th>
+                        <th style="width: 100px;">设备</th>
+                        <th style="width: 110px;">操作系统</th>
+                        <th style="width: 100px;">浏览器</th>
+                        <th style="width: 110px;">屏幕</th>
+                        <th style="width: 90px;">语言</th>
+                        <th>时区</th>
+                    </tr>
+                </thead>
+                <tbody id="visitTableBody">
+                    <tr><td colspan="8" class="loading"><i class="fas fa-spinner fa-spin me-2"></i>加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer class="text-center text-muted small py-3">
+        GPU Monitor · Visit Stats · <span id="footerYear"></span>
+    </footer>
+</div>
+
+<script>
+const charts = {};
+let currentTrendRange = '7d';
+let latestRawVisits = [];   // 后端返回的原始访问记录（倒序）
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function fmtTime(ts) {
+    if (!ts) return '—';
+    if (typeof ts === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(ts)) return ts;
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return String(ts);
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} `
+         + `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+}
+
+function escapeHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function deviceBadge(device) {
+    const map = {
+        'Mobile':  { cls: 'bg-primary bg-opacity-10 text-primary',     icon: 'fa-mobile-screen-button' },
+        'Tablet':  { cls: 'bg-info bg-opacity-10 text-info',           icon: 'fa-tablet-screen-button' },
+        'Desktop': { cls: 'bg-success bg-opacity-10 text-success',     icon: 'fa-desktop' },
+        'Bot':     { cls: 'bg-secondary bg-opacity-10 text-secondary', icon: 'fa-robot' },
+        'Unknown': { cls: 'bg-secondary bg-opacity-10 text-secondary', icon: 'fa-circle-question' }
+    };
+    const m = map[device] || map['Unknown'];
+    return `<span class="badge badge-device ${m.cls}"><i class="fas ${m.icon} me-1"></i>${escapeHtml(device || 'Unknown')}</span>`;
+}
+
+function makeChart(id, config) {
+    if (charts[id]) { charts[id].destroy(); }
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const parent = canvas.parentElement;
+    const prevEmpty = parent.querySelector('.chart-empty');
+    if (prevEmpty) prevEmpty.remove();
+    canvas.style.display = '';
+    charts[id] = new Chart(canvas.getContext('2d'), config);
+}
+
+function showEmptyChart(id, text) {
+    if (charts[id]) { charts[id].destroy(); charts[id] = null; }
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    canvas.style.display = 'none';
+    const parent = canvas.parentElement;
+    if (!parent.querySelector('.chart-empty')) {
+        const div = document.createElement('div');
+        div.className = 'chart-empty';
+        div.innerHTML = `<i class="fas fa-inbox"></i>${text}`;
+        parent.appendChild(div);
+    }
+}
+
+async function loadStats() {
+    const res = await fetch('/api/stats', { cache: 'no-store' });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch (e) { throw new Error(`服务端返回非 JSON（HTTP ${res.status}）：${text.slice(0, 200)}`); }
+    if (!res.ok) throw new Error(data && data.error ? data.error : `HTTP ${res.status}`);
+    return data;
+}
+
+function renderKpi(data, onlineCount) {
+    document.getElementById('kpiTotal').textContent = data.total ?? 0;
+    document.getElementById('kpiUniqueIP').textContent = data.uniqueIPs ?? 0;
+    document.getElementById('kpiToday').textContent = data.today ?? 0;
+    document.getElementById('kpiOnline').textContent = onlineCount ?? 0;
+
+    // 副标题
+    document.getElementById('kpiTotalSub').textContent = `最近一次 ${data.lastTime || '—'}`;
+    document.getElementById('kpiUniqueIPSub').textContent = `独立设备 ${data.uniqueDevices ?? 0} 台`;
+    document.getElementById('kpiTodaySub').textContent = `昨天 ${data.yesterday ?? 0} 次`;
+
+    const diff = (data.today ?? 0) - (data.yesterday ?? 0);
+    const onlineSub = document.getElementById('kpiOnlineSub');
+    if (diff === 0) onlineSub.textContent = '与昨日持平';
+    else if (diff > 0) onlineSub.textContent = `较昨日 +${diff}`;
+    else onlineSub.textContent = `较昨日 ${diff}`;
+
+    document.getElementById('lastUpdated').textContent = fmtTime(new Date().toISOString());
+}
+
+// 按选择的时间范围生成趋势数据
+function buildTrendData(visits, range) {
+    const now = new Date();
+    const buckets = [];
+    const labels = [];
+    const keyOf = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    const hourKeyOf = d => `${keyOf(d)} ${pad2(d.getHours())}`;
+
+    if (range === '24h') {
+        for (let i = 23; i >= 0; i--) {
+            const d = new Date(now.getTime() - i * 3600 * 1000);
+            buckets.push(hourKeyOf(d));
+            labels.push(`${pad2(d.getHours())}:00`);
+        }
+    } else {
+        const days = range === '7d' ? 7 : range === '14d' ? 14 : 30;
+        for (let i = days - 1; i >= 0; i--) {
+            const d = new Date(now.getTime() - i * 86400 * 1000);
+            buckets.push(keyOf(d));
+            labels.push(`${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`);
+        }
+    }
+
+    const counts = new Array(buckets.length).fill(0);
+    (visits || []).forEach(v => {
+        const t = String(v.time || '');
+        if (!t) return;
+        const day = t.slice(0, 10);
+        const hour = t.slice(11, 13);
+        let key;
+        if (range === '24h') {
+            // 找到最接近这个小时的 bucket
+            const idx = buckets.findIndex(b => b.endsWith(' ' + hour) && b.startsWith(day));
+            if (idx >= 0) counts[idx]++;
+        } else {
+            const idx = buckets.indexOf(day);
+            if (idx >= 0) counts[idx]++;
+        }
+    });
+
+    return { labels, counts };
+}
+
+function renderTrend(visits, range) {
+    const { labels, counts } = buildTrendData(visits, range);
+    const total = counts.reduce((a, b) => a + b, 0);
+    document.getElementById('trendTotal').textContent = `合计 ${total} 次`;
+
+    if (counts.every(v => !v)) {
+        showEmptyChart('trendChart', '该时间段暂无访问');
+        return;
+    }
+
+    makeChart('trendChart', {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: '访问次数',
+                data: counts,
+                backgroundColor: 'rgba(25, 135, 84, 0.75)',
+                hoverBackgroundColor: 'rgba(25, 135, 84, 1)',
+                borderRadius: 6,
+                maxBarThickness: 40
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                    padding: 10,
+                    titleFont: { size: 12 },
+                    bodyFont: { size: 12 },
+                    displayColors: false
+                }
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0, color: '#94a3b8' }, grid: { color: '#eef0f2' } },
+                x: { grid: { display: false }, ticks: { color: '#94a3b8', maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } }
+            }
+        }
+    });
+}
+
+function renderDevice(deviceStats) {
+    const labels = Object.keys(deviceStats || {});
+    const values = labels.map(k => deviceStats[k]);
+    if (!labels.length || values.every(v => !v)) {
+        showEmptyChart('deviceChart', '暂无数据');
+        return;
+    }
+    const colors = ['#0d6efd', '#06b6d4', '#198754', '#f59e0b', '#8b5cf6'];
+    makeChart('deviceChart', {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data: values,
+                backgroundColor: labels.map((_, i) => colors[i % colors.length]),
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 }, padding: 12 } },
+                tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.92)', padding: 10 }
+            },
+            cutout: '62%'
+        }
+    });
+}
+
+function renderUA(uaStats) {
+    const labels = Object.keys(uaStats || {});
+    const values = labels.map(k => uaStats[k]);
+    if (!labels.length || values.every(v => !v)) {
+        showEmptyChart('uaChart', '暂无数据');
+        return;
+    }
+    makeChart('uaChart', {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: '访问次数',
+                data: values,
+                backgroundColor: 'rgba(13, 110, 253, 0.75)',
+                hoverBackgroundColor: 'rgba(13, 110, 253, 1)',
+                borderRadius: 6,
+                maxBarThickness: 22
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.92)', padding: 10, displayColors: false }
+            },
+            scales: {
+                x: { beginAtZero: true, ticks: { precision: 0, color: '#94a3b8' }, grid: { color: '#eef0f2' } },
+                y: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+            }
+        }
+    });
+}
+
+function renderSources(visits) {
+    const map = {};
+    (visits || []).forEach(v => {
+        let key = '直接访问';
+        const r = String(v.referrer || '').trim();
+        if (r) {
+            try {
+                const u = new URL(r);
+                key = u.hostname || r;
+            } catch (e) { key = r; }
+        }
+        map[key] = (map[key] || 0) + 1;
+    });
+    const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const ul = document.getElementById('sourceList');
+    if (!sorted.length) {
+        ul.innerHTML = '<li><span class="text-muted small">暂无数据</span></li>';
+        return;
+    }
+    ul.innerHTML = sorted.map(([name, count]) => `
+        <li>
+            <span class="source-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+            <span class="source-count">${count}</span>
+        </li>
+    `).join('');
+}
+
+function renderTable(visits) {
+    const filter = (document.getElementById('tableFilter').value || '').trim().toLowerCase();
+    const limit = parseInt(document.getElementById('tableLimit').value, 10) || 50;
+
+    let rows = Array.isArray(visits) ? visits : [];
+    if (filter) {
+        rows = rows.filter(v => {
+            const hay = [v.ip, v.device, v.os, v.browser, v.screen, v.language, v.tz, fmtTime(v.time)]
+                .map(x => String(x == null ? '' : x)).join(' ').toLowerCase();
+            return hay.includes(filter);
+        });
+    }
+    rows = rows.slice(0, limit);
+
+    const tbody = document.getElementById('visitTableBody');
+    if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="loading">暂无匹配记录</td></tr>';
+        return;
+    }
+    tbody.innerHTML = rows.map(v => `
+        <tr>
+            <td class="mono">${escapeHtml(fmtTime(v.time))}</td>
+            <td><span class="ip-pill">${escapeHtml(v.ip || '—')}</span></td>
+            <td>${deviceBadge(v.device)}</td>
+            <td>${escapeHtml(v.os || '—')}</td>
+            <td>${escapeHtml(v.browser || '—')}</td>
+            <td class="mono">${escapeHtml(v.screen || '—')}</td>
+            <td>${v.language ? `<span class="lang-pill">${escapeHtml(v.language)}</span>` : '—'}</td>
+            <td class="tz-text">${escapeHtml(v.tz || '—')}</td>
+        </tr>
+    `).join('');
+}
+
+async function refresh() {
+    try {
+        const data = await loadStats();
+        latestRawVisits = Array.isArray(data.visits) ? data.visits : [];
+
+        // 计算"当前在线"（最近 5 分钟内的独立 IP）
+        const now = Date.now();
+        const recentIPs = new Set();
+        latestRawVisits.forEach(v => {
+            const t = Date.parse(String(v.time || '').replace(' ', 'T'));
+            if (Number.isFinite(t) && (now - t) <= 5 * 60 * 1000) {
+                if (v.ip) recentIPs.add(v.ip);
+            }
+        });
+
+        renderKpi(data, recentIPs.size);
+        renderTrend(latestRawVisits, currentTrendRange);
+        renderDevice(data.devices || {});
+        renderUA(data.ua || {});
+        renderSources(latestRawVisits);
+        renderTable(latestRawVisits);
+    } catch (e) {
+        console.error(e);
+        document.getElementById('visitTableBody').innerHTML =
+            `<tr><td colspan="8" class="text-danger text-center py-4">加载失败：${escapeHtml(e.message)}</td></tr>`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('footerYear').textContent = new Date().getFullYear();
+    document.getElementById('refreshBtn').addEventListener('click', refresh);
+    document.getElementById('tableFilter').addEventListener('input', () => renderTable(latestRawVisits));
+    document.getElementById('tableLimit').addEventListener('change', () => renderTable(latestRawVisits));
+
+    // 趋势范围切换
+    document.querySelectorAll('#trendRange button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#trendRange button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTrendRange = btn.dataset.range;
+            renderTrend(latestRawVisits, currentTrendRange);
+        });
+    });
+
+    refresh();
+    setInterval(() => { if (!document.hidden) refresh(); }, 15000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+});
+</script>
+
+</body>
+</html>

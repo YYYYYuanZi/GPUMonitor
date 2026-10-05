@@ -1,8 +1,10 @@
 import json
 import os
+import re
 import time
 import threading
 import paramiko
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify
 from concurrent.futures import ThreadPoolExecutor
 
@@ -11,6 +13,7 @@ app = Flask(__name__)
 # ================= 配置与全局变量 =================
 CONFIG_FILE = 'servers.json'
 NOTIFICATIONS_FILE = 'notifications.json'
+VISITS_FILE = 'visits.json'
 
 SERVERS = []
 SERVERS_LOCK = threading.Lock()
@@ -26,6 +29,11 @@ NOTIFICATIONS = []
 NOTIFICATIONS_LOCK = threading.Lock()
 ACTIVE_PIDS = {}
 NOTIFICATIONS_MAX = 1000
+
+# ===== 访问统计相关 =====
+VISITS = []
+VISITS_LOCK = threading.Lock()
+VISITS_MAX = 5000
 
 
 # ================= 持久化存储逻辑 =================
@@ -87,8 +95,33 @@ def save_notifications():
             print(f"Error saving notifications: {e}")
 
 
+def load_visits():
+    global VISITS
+    if not os.path.exists(VISITS_FILE):
+        VISITS = []
+    else:
+        try:
+            with open(VISITS_FILE, 'r', encoding='utf-8') as f:
+                VISITS = json.load(f)
+                if not isinstance(VISITS, list):
+                    VISITS = []
+        except Exception as e:
+            print(f"Error loading visits: {e}")
+            VISITS = []
+
+
+def save_visits_locked():
+    # 调用者必须已持有 VISITS_LOCK
+    try:
+        with open(VISITS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(VISITS[-VISITS_MAX:], f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Error saving visits: {e}")
+
+
 load_config()
 load_notifications()
+load_visits()
 
 
 # ================= 命令定义 =================
@@ -101,7 +134,10 @@ CMD_GPU = f'nvidia-smi --query-gpu={",".join(NVIDIA_SMI_GPU_FIELDS)} --format=cs
 NVIDIA_SMI_PROC_FIELDS = ('gpu_uuid', 'pid', 'process_name', 'used_gpu_memory')
 CMD_PROC = f'nvidia-smi --query-compute-apps={",".join(NVIDIA_SMI_PROC_FIELDS)} --format=csv,noheader,nounits'
 COMBINED_CMD = f"{CMD_GPU} ; echo '{SEPARATOR}' ; {CMD_PROC}"
-PS_FIELDS = "pid=,user=,lstart=,args="
+
+# 关键修复：给 user / lstart 指定足够列宽，避免 ps 把长用户名截断成 "chengle+"。
+# 同时输出 uid= 用于兜底反查完整用户名。
+PS_FIELDS = "pid=,user:64=,uid=,lstart:32=,args="
 
 
 # ================= 工具函数 =================
@@ -134,6 +170,80 @@ def parse_lstart(lstart_str):
         return time.strftime('%Y-%m-%d %H:%M:%S', tm)
     except Exception:
         return None
+
+
+def looks_truncated(username):
+    """ps 截断用户名时通常以 '+' 结尾（如 chengle+ / wangxin+）。"""
+    if not username:
+        return False
+    return username.endswith('+') or username.endswith('+ ')
+
+
+# ================= 访问统计工具 =================
+def _get_client_ip():
+    xff = request.headers.get('X-Forwarded-For', '')
+    if xff:
+        return xff.split(',')[0].strip()
+    xri = request.headers.get('X-Real-IP', '')
+    if xri:
+        return xri.strip()
+    return request.remote_addr or 'unknown'
+
+
+def _parse_ua(ua):
+    """从 User-Agent 粗略解析设备 / 操作系统 / 浏览器。"""
+    ua = ua or ''
+    low = ua.lower()
+
+    # 设备类型
+    if re.search(r'bot|crawler|spider|slurp|bingpreview|curl|wget|python-requests|httpclient', low):
+        device = 'Bot'
+    elif re.search(r'ipad|tablet|kindle|playbook|silk', low):
+        device = 'Tablet'
+    elif re.search(r'mobile|iphone|ipod|android.*mobile|windows phone|blackberry', low):
+        device = 'Mobile'
+    elif re.search(r'windows|macintosh|linux|x11|cros', low):
+        device = 'Desktop'
+    else:
+        device = 'Unknown'
+
+    # 操作系统
+    os_name = 'Unknown'
+    if 'windows nt 10' in low:
+        os_name = 'Windows 10/11'
+    elif 'windows nt 6.3' in low:
+        os_name = 'Windows 8.1'
+    elif 'windows nt 6.1' in low:
+        os_name = 'Windows 7'
+    elif 'windows' in low:
+        os_name = 'Windows'
+    elif 'android' in low:
+        os_name = 'Android'
+    elif 'iphone' in low or 'ipad' in low or 'ipod' in low:
+        os_name = 'iOS'
+    elif 'mac os x' in low or 'macintosh' in low:
+        os_name = 'macOS'
+    elif 'cros' in low:
+        os_name = 'ChromeOS'
+    elif 'linux' in low:
+        os_name = 'Linux'
+
+    # 浏览器
+    browser = 'Unknown'
+    if 'edg/' in low or 'edgios' in low or 'edga' in low:
+        browser = 'Edge'
+    elif 'opr/' in low or 'opera' in low:
+        browser = 'Opera'
+    elif 'chrome/' in low or 'crios' in low:
+        browser = 'Chrome'
+    elif 'firefox/' in low or 'fxios' in low:
+        browser = 'Firefox'
+    elif 'safari/' in low:
+        browser = 'Safari'
+    elif 'msie' in low or 'trident' in low:
+        browser = 'IE'
+
+    return device, os_name, browser
 
 
 # ================= SSH / GPU 数据 =================
@@ -230,34 +340,60 @@ def fetch_single_server_data(host_details):
             processes_by_uuid[uuid].append(p_info)
             all_pids.add(p_info['pid'])
 
+        # ---- 兜底：建立 uid -> username 映射（用于 ps 截断时反查） ----
+        uid_to_user = {}
+        try:
+            stdin, stdout, stderr = client.exec_command("getent passwd", timeout=10)
+            passwd_out = stdout.read().decode('utf-8', errors='ignore')
+            for line in passwd_out.splitlines():
+                cols = line.split(':')
+                if len(cols) >= 3:
+                    uid_to_user[cols[2]] = cols[0]
+        except Exception as e:
+            print(f"[{hostname}] getent passwd failed: {e}")
+
         pid_to_info = {}
         if all_pids:
             pids_str = ",".join(all_pids)
             try:
                 cmd_ps = f"ps -o {PS_FIELDS} -p {pids_str}"
                 stdin, stdout, stderr = client.exec_command(cmd_ps, timeout=10)
-                ps_out = stdout.read().decode('utf-8').strip()
+                ps_out = stdout.read().decode('utf-8', errors='ignore')
+
                 for line in ps_out.splitlines():
                     line = line.strip()
                     if not line:
                         continue
-                    parts_ps = line.split(None, 7)
-                    if len(parts_ps) < 8:
-                        if len(parts_ps) >= 7:
-                            pid = parts_ps[0]
-                            user = parts_ps[1]
-                            lstart_str = ' '.join(parts_ps[2:7])
-                            args = ''
-                            pid_to_info[pid] = {
-                                'user': user,
-                                'command': args[:512],
-                                'start_time': parse_lstart(lstart_str),
-                            }
+
+                    parts_ps = line.split(None, 9)
+
+                    if len(parts_ps) >= 9:
+                        pid = parts_ps[0]
+                        user_raw = parts_ps[1]
+                        uid = parts_ps[2]
+                        lstart_str = ' '.join(parts_ps[3:8])
+                        args = parts_ps[8] if len(parts_ps) > 8 else ''
+                    elif len(parts_ps) >= 8:
+                        pid = parts_ps[0]
+                        user_raw = parts_ps[1]
+                        uid = ''
+                        lstart_str = ' '.join(parts_ps[2:7])
+                        args = parts_ps[7] if len(parts_ps) > 7 else ''
+                    elif len(parts_ps) >= 7:
+                        pid = parts_ps[0]
+                        user_raw = parts_ps[1]
+                        uid = ''
+                        lstart_str = ' '.join(parts_ps[2:7])
+                        args = ''
+                    else:
                         continue
-                    pid = parts_ps[0]
-                    user = parts_ps[1]
-                    lstart_str = ' '.join(parts_ps[2:7])
-                    args = parts_ps[7] if len(parts_ps) > 7 else ''
+
+                    user = user_raw
+                    if looks_truncated(user_raw) and uid and uid in uid_to_user:
+                        user = uid_to_user[uid]
+                    elif (not user or user == 'unknown') and uid and uid in uid_to_user:
+                        user = uid_to_user[uid]
+
                     pid_to_info[pid] = {
                         'user': user,
                         'command': args[:512],
@@ -473,6 +609,13 @@ def dashboard():
     return render_template('index.html')
 
 
+@app.route('/stats.html')
+def stats_page():
+    # 如果 stats.html 放在 templates 下，用 render_template；
+    # 如果和 app.py 同目录，可直接 send_from_directory。
+    return render_template('stats.html')
+
+
 @app.route('/api/gpustat/all')
 def api_gpu_data():
     with CACHE_LOCK:
@@ -492,6 +635,110 @@ def api_gpu_data():
         return jsonify(safe)
 
 
+# ================= 访问统计接口 =================
+@app.route('/api/track', methods=['POST'])
+def api_track():
+    try:
+        payload = request.get_json(silent=True) or {}
+    except Exception:
+        payload = {}
+
+    ip = _get_client_ip()
+    ua = request.headers.get('User-Agent', '')
+    device, os_name, browser = _parse_ua(ua)
+
+    record = {
+        'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'ip': ip,
+        'device': device,
+        'os': os_name,
+        'browser': browser,
+        'ua': ua[:300],
+        'path': str(payload.get('path', '/'))[:200],
+        'referrer': str(payload.get('referrer', ''))[:300],
+        'screen': str(payload.get('screen', ''))[:40],
+        'language': str(payload.get('language', ''))[:40],
+        'tz': str(payload.get('tz', ''))[:60],
+    }
+
+    global VISITS
+    with VISITS_LOCK:
+        VISITS.append(record)
+        if len(VISITS) > VISITS_MAX:
+            VISITS = VISITS[-VISITS_MAX:]
+        save_visits_locked()
+
+    return jsonify({'success': True})
+
+
+@app.route('/api/stats')
+def api_stats():
+    with VISITS_LOCK:
+        visits = list(VISITS)
+
+    total = len(visits)
+    unique_ips = len({v.get('ip') for v in visits if v.get('ip')})
+    unique_devices = len({
+        f"{v.get('device')}|{v.get('os')}|{v.get('browser')}" for v in visits
+    })
+
+    today_str = datetime.now().strftime('%Y-%m-%d')
+    yesterday_str = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+
+    today = sum(1 for v in visits if str(v.get('time', '')).startswith(today_str))
+    yesterday = sum(1 for v in visits if str(v.get('time', '')).startswith(yesterday_str))
+
+    # 最近一次访问时间
+    last_time = visits[-1].get('time', '') if visits else ''
+
+    # 趋势（14 天，前端会自己按 24h/7d/14d/30d 重新分桶）
+    trend_map = {}
+    for i in range(13, -1, -1):
+        d = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+        trend_map[d] = 0
+    for v in visits:
+        d = str(v.get('time', ''))[:10]
+        if d in trend_map:
+            trend_map[d] += 1
+    trend = [{'date': d, 'count': c} for d, c in trend_map.items()]
+
+    devices = {}
+    for v in visits:
+        k = v.get('device', 'Unknown')
+        devices[k] = devices.get(k, 0) + 1
+
+    hours = {str(i).zfill(2): 0 for i in range(24)}
+    for v in visits:
+        t = str(v.get('time', ''))
+        if len(t) >= 13:
+            h = t[11:13]
+            if h in hours:
+                hours[h] += 1
+
+    ua_map = {}
+    for v in visits:
+        key = f"{v.get('browser', 'Unknown')} / {v.get('os', 'Unknown')}"
+        ua_map[key] = ua_map.get(key, 0) + 1
+    ua_sorted = dict(sorted(ua_map.items(), key=lambda x: x[1], reverse=True)[:8])
+
+    recent = list(reversed(visits))
+
+    return jsonify({
+        'total': total,
+        'uniqueIPs': unique_ips,
+        'uniqueDevices': unique_devices,
+        'today': today,
+        'yesterday': yesterday,       # ← 新增
+        'lastTime': last_time,        # ← 新增
+        'trend': trend,
+        'devices': devices,
+        'hours': hours,
+        'ua': ua_sorted,
+        'visits': recent,             # 前端会用这个现算 24h / 7d / 14d / 30d 趋势
+    })
+
+
+# ================= 通知接口 =================
 def _notification_ordered_locked():
     """Return notifications in the same order used by the UI.
 
@@ -583,7 +830,6 @@ def api_notifications_search():
     page = max(1, page)
     page_size = max(1, min(100, page_size))
 
-    # Normalize whitespace and split into AND terms.
     terms = [term.casefold() for term in query.split() if term.strip()]
 
     with NOTIFICATIONS_LOCK:

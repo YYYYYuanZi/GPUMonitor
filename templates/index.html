@@ -1,54 +1,114 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GPU Monitor · 通知栏分页</title>
+    <title>GPU Monitor</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/2.0.3/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256' viewBox='0 0 32 32'><path fill='%2380bc00' d='M12.447 12.265v-1.674q.244-.018.494-.026c4.577-.143 7.581 3.934 7.581 3.934S17.278 19 13.8 19a4.2 4.2 0 0 1-1.353-.217v-5.071c1.782.215 2.14 1 3.212 2.788l2.383-2.009a6.3 6.3 0 0 0-4.672-2.281a9 9 0 0 0-.923.055m0-5.529v2.5q.246-.02.494-.03c6.366-.214 10.513 5.221 10.513 5.221s-4.764 5.792-9.726 5.792a7.4 7.4 0 0 1-1.281-.112v1.545a9 9 0 0 0 1.067.069c4.618 0 7.958-2.358 11.192-5.15c.535.43 2.731 1.474 3.182 1.932c-3.075 2.574-10.241 4.649-14.3 4.649c-.392 0-.769-.024-1.138-.06v2.172H30V6.736Zm0 12.051v1.32c-4.271-.762-5.457-5.2-5.457-5.2a9.23 9.23 0 0 1 5.457-2.64v1.447h-.006a4.1 4.1 0 0 0-3.184 1.456s.782 2.811 3.19 3.62m-7.586-4.077a10.58 10.58 0 0 1 7.586-4.122V9.236C6.848 9.685 2 14.427 2 14.427s2.746 7.939 10.447 8.665v-1.44c-5.647-.711-7.586-6.939-7.586-6.939' /></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256' viewBox='0 0 32 32'><path fill='%2380bc00' d='M12.447 12.265v-1.674q.244-.018.494-.026c4.577-.143 7.581 3.934 7.581 3.934S17.278 19 13.8 19a4.2 4.2 0 0 1-1.353-.217v-5.071c1.782.215 2.14 1 3.212 2.788l2.383-2.009a6.3 6.3 0 0 0-4.672-2.281a9 9 0 0 0-.923.055m0-5.529v2.5q.246-.02.494-.03c6.366-.214 10.513 5.221 10.513 5.221s-4.764 5.792-9.726 5.792a7.4 7.4 0 0 1-1.281-.112v1.545a9 9 0 0 0 1.067.069c4.618 0 7.958-2.358 11.192-5.15c.535.43 2.731 1.474 3.182 1.932c-3.075 2.574-10.241 4.649-14.3 4.649c-.392 0-.769-.024-1.138-.06v2.172H30V6.736Zm0 12.051v1.32c-4.271-.762-5.457-5.2-5.457-5.2a9.23 9.23 0 0 1 5.457-2.64v1.447h-.006a4.1 4.1 0 0 0-3.184 1.456s.782 2.811 3.19 3.62m-7.586-4.077a10.58 10.58 0 0 1 7.586-4.122V9.236C6.848 9.685 2 14.427 2 14.427s2.746 7.939 10.447 8.665v-1.44c-5.647-.711-7.586-6.939-7.586-6.939' /></svg>">
 
     <style>
-        html, body {
+        html,
+        body {
             min-height: 100%;
             background-color: #212529 !important;
             overflow-x: hidden;
         }
 
-        #gpu-cards-container { min-height: 0; margin-bottom: 1.5rem; }
-        .gpu-card-val { font-variant-numeric: tabular-nums; }
-        .card-footer .col-3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .progress-subtle { height: 6px; background-color: rgba(255,255,255,0.15); border-radius: 3px; margin-top: 4px; }
-        .fade-in-card { animation: none !important; }
+        #gpu-cards-container {
+            min-height: 0;
+            margin-bottom: 1.5rem;
+        }
 
-        .gpu-idle { opacity: 0.8; transition: opacity 0.2s ease; }
-        .gpu-idle:hover { opacity: 1; }
+        .gpu-card-val {
+            font-variant-numeric: tabular-nums;
+        }
 
-        .cursor-move { cursor: grab; color: #6c757d; }
-        .cursor-move:active { cursor: grabbing; }
-        .cursor-move:hover { color: #198754; }
-        .sortable-ghost { opacity: 0.4; background-color: #e9ecef; }
+        .card-footer .col-3 {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .progress-subtle {
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+            margin-top: 4px;
+        }
+
+        .fade-in-card {
+            animation: none !important;
+        }
+
+        .gpu-idle {
+            opacity: 0.8;
+            transition: opacity 0.2s ease;
+        }
+
+        .gpu-idle:hover {
+            opacity: 1;
+        }
+
+        .cursor-move {
+            cursor: grab;
+            color: #6c757d;
+        }
+
+        .cursor-move:active {
+            cursor: grabbing;
+        }
+
+        .cursor-move:hover {
+            color: #198754;
+        }
+
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #e9ecef;
+        }
 
         .btn-icon-only {
-            width: 38px; height: 38px; padding: 0;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
         }
-        .btn-icon-only i { transition: transform 0.4s ease; }
-        .btn-icon-only:hover { background-color: rgba(255,255,255,0.12); transform: scale(1.1); }
+
+        .btn-icon-only i {
+            transition: transform 0.4s ease;
+        }
+
+        .btn-icon-only:hover {
+            background-color: rgba(255, 255, 255, 0.12);
+            transform: scale(1.1);
+        }
 
         /* ===== 侧栏通用 ===== */
         .side-panel {
-            position: absolute; top: 76px; width: 180px;
+            position: absolute;
+            top: 76px;
+            width: 180px;
             max-height: calc(100vh - 96px);
-            z-index: 1020; box-sizing: border-box;
+            z-index: 1020;
+            box-sizing: border-box;
             transition: opacity 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
         }
-        .side-panel.overlap-hidden { display: none !important; }
+
+        .side-panel.overlap-hidden {
+            display: none !important;
+        }
 
         #user-gpu-shortcuts {
             background: transparent;
@@ -61,132 +121,366 @@
             flex-direction: column;
             gap: 10px;
         }
-        #user-gpu-shortcuts::-webkit-scrollbar { width: 4px; }
-        #user-gpu-shortcuts::-webkit-scrollbar-track { background: transparent; }
-        #user-gpu-shortcuts::-webkit-scrollbar-thumb { background: #495057; border-radius: 4px; }
+
+        #user-gpu-shortcuts::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #user-gpu-shortcuts::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #user-gpu-shortcuts::-webkit-scrollbar-thumb {
+            background: #495057;
+            border-radius: 4px;
+        }
 
         .left-panel {
             background: #1b1f22;
             border: 1px solid #343a40;
             border-radius: 10px;
             padding: 9px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.30), 0 2px 6px rgba(0,0,0,0.20);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.30), 0 2px 6px rgba(0, 0, 0, 0.20);
             backdrop-filter: blur(8px);
             flex-shrink: 0;
         }
 
         #server-shortcuts {
-            background: #1b1f22; border: 1px solid #343a40;
-            border-radius: 10px; padding: 9px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.30), 0 2px 6px rgba(0,0,0,0.20);
+            background: #1b1f22;
+            border: 1px solid #343a40;
+            border-radius: 10px;
+            padding: 9px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.30), 0 2px 6px rgba(0, 0, 0, 0.20);
             backdrop-filter: blur(8px);
             overflow-y: auto;
         }
-        #server-shortcuts::-webkit-scrollbar { width: 4px; }
-        #server-shortcuts::-webkit-scrollbar-track { background: transparent; }
-        #server-shortcuts::-webkit-scrollbar-thumb { background: #495057; border-radius: 4px; }
+
+        #server-shortcuts::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #server-shortcuts::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #server-shortcuts::-webkit-scrollbar-thumb {
+            background: #495057;
+            border-radius: 4px;
+        }
 
         #tools-nav-panel {
-            background: #1b1f22; border: 1px solid #343a40;
-            border-radius: 10px; padding: 9px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.30), 0 2px 6px rgba(0,0,0,0.20);
+            background: #1b1f22;
+            border: 1px solid #343a40;
+            border-radius: 10px;
+            padding: 9px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.30), 0 2px 6px rgba(0, 0, 0, 0.20);
             backdrop-filter: blur(8px);
             overflow-y: auto;
         }
 
         .side-panel-title {
-            color: #adb5bd; font-size: 12px; font-weight: 600;
-            padding: 5px 6px 8px; border-bottom: 1px solid #343a40;
-            margin-bottom: 8px; letter-spacing: 0.2px;
+            color: #adb5bd;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 5px 6px 8px;
+            border-bottom: 1px solid #343a40;
+            margin-bottom: 8px;
+            letter-spacing: 0.2px;
         }
-        .side-panel-title i { color: #6c757d; }
+
+        .side-panel-title i {
+            color: #6c757d;
+        }
 
         /* ===== 列表项 ===== */
         .panel-btn {
-            width: 100%; margin-bottom: 5px;
-            display: flex; align-items: center; gap: 7px;
-            padding: 7px 8px; color: #ced4da; background: #252a2e;
-            border: 1px solid #343a40; border-radius: 7px;
-            font-size: 12px; text-align: left;
+            width: 100%;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 8px;
+            color: #ced4da;
+            background: #252a2e;
+            border: 1px solid #343a40;
+            border-radius: 7px;
+            font-size: 12px;
+            text-align: left;
             transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
         }
-        .panel-btn:last-child { margin-bottom: 0; }
-        .panel-btn:hover { color: #fff; background: #2d3338; border-color: #495057; transform: translateX(1px); }
-        .panel-btn[data-hostname] { cursor: grab; }
-        .panel-btn[data-hostname]:active { cursor: grabbing; }
-        .panel-btn.active {
-            color: #fff; background: #198754; border-color: #198754;
-            box-shadow: 0 2px 8px rgba(25,135,84,0.28);
+
+        .panel-btn:last-child {
+            margin-bottom: 0;
         }
-        .panel-btn.active:hover { background: #157347; border-color: #157347; }
-        .panel-btn i { width: 14px; min-width: 14px; flex-shrink: 0; text-align: center; color: #868e96; }
-        .panel-btn.active i { color: #fff; }
-        .panel-btn-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; min-width: 0; }
+
+        .panel-btn:hover {
+            color: #fff;
+            background: #2d3338;
+            border-color: #495057;
+            transform: translateX(1px);
+        }
+
+        .panel-btn[data-hostname] {
+            cursor: grab;
+        }
+
+        .panel-btn[data-hostname]:active {
+            cursor: grabbing;
+        }
+
+        .panel-btn.active {
+            color: #fff;
+            background: #198754;
+            border-color: #198754;
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.28);
+        }
+
+        .panel-btn.active:hover {
+            background: #157347;
+            border-color: #157347;
+        }
+
+        .panel-btn i {
+            width: 14px;
+            min-width: 14px;
+            flex-shrink: 0;
+            text-align: center;
+            color: #868e96;
+        }
+
+        .panel-btn.active i {
+            color: #fff;
+        }
+
+        .panel-btn-name {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            flex: 1;
+            min-width: 0;
+        }
 
         .server-status-dot {
-            width: 7px; height: 7px; min-width: 7px; min-height: 7px;
-            border-radius: 50%; display: inline-block; background: #6c757d;
-            box-shadow: 0 0 0 2px rgba(255,255,255,0.04);
+            width: 7px;
+            height: 7px;
+            min-width: 7px;
+            min-height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            background: #6c757d;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.04);
             transition: background-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .server-status-dot.online { background: #198754; box-shadow: 0 0 0 2px rgba(25,135,84,0.10), 0 0 6px rgba(25,135,84,0.55); }
-        .server-status-dot.offline { background: #dc3545; box-shadow: 0 0 0 2px rgba(220,53,69,0.10), 0 0 6px rgba(220,53,69,0.45); }
-        .server-status-dot.unknown { background: #6c757d; }
-        .server-status-dot.all-status { background: #198754; box-shadow: 0 0 0 2px rgba(25,135,84,0.10), 0 0 6px rgba(25,135,84,0.45); }
 
-        .side-panel-empty { color: #6c757d; font-size: 12px; text-align: center; padding: 10px 5px; }
+        .server-status-dot.online {
+            background: #198754;
+            box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.10), 0 0 6px rgba(25, 135, 84, 0.55);
+        }
+
+        .server-status-dot.offline {
+            background: #dc3545;
+            box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.10), 0 0 6px rgba(220, 53, 69, 0.45);
+        }
+
+        .server-status-dot.unknown {
+            background: #6c757d;
+        }
+
+        .server-status-dot.all-status {
+            background: #198754;
+            box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.10), 0 0 6px rgba(25, 135, 84, 0.45);
+        }
+
+        .side-panel-empty {
+            color: #6c757d;
+            font-size: 12px;
+            text-align: center;
+            padding: 10px 5px;
+        }
 
         /* ===== Free GPUs 大卡 ===== */
         .user-free-gpu-card {
-            width: 100%; display: block; padding: 10px 12px; margin-bottom: 0;
-            color: #ced4da; background: #252a2e; border: 1px solid #343a40;
-            border-radius: 9px; font-size: 12px; text-align: left;
-            cursor: pointer; user-select: none; appearance: none; box-sizing: border-box;
+            width: 100%;
+            display: block;
+            padding: 10px 12px;
+            margin-bottom: 0;
+            color: #ced4da;
+            background: #252a2e;
+            border: 1px solid #343a40;
+            border-radius: 9px;
+            font-size: 12px;
+            text-align: left;
+            cursor: pointer;
+            user-select: none;
+            appearance: none;
+            box-sizing: border-box;
             transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
         }
-        .user-free-gpu-card:hover { color: #fff; background: #2d3338; border-color: #495057; }
-        .user-free-gpu-card.active { color: #fff; background: #198754; border-color: #198754; box-shadow: 0 2px 8px rgba(25,135,84,0.28); }
-        .user-free-gpu-card.active:hover { background: #157347; border-color: #157347; }
 
-        .user-free-gpu-left { display: flex; align-items: center; gap: 7px; min-width: 0; }
-        .user-free-gpu-left i { width: 14px; min-width: 14px; text-align: center; color: #198754; }
-        .user-free-gpu-card.active .user-free-gpu-left i { color: #fff; }
-        .user-free-gpu-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 600; }
-        .user-free-gpu-count { font-size: 18px; line-height: 1.1; font-weight: 700; font-variant-numeric: tabular-nums; }
-        .user-free-gpu-percent { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
-        .user-free-gpu-progress { height: 5px; margin-top: 6px; background: rgba(255,255,255,0.10); border-radius: 3px; overflow: hidden; }
-        .user-free-gpu-progress-bar { height: 100%; width: 0; border-radius: 3px; background: #198754; transition: width 0.25s ease; }
+        .user-free-gpu-card:hover {
+            color: #fff;
+            background: #2d3338;
+            border-color: #495057;
+        }
+
+        .user-free-gpu-card.active {
+            color: #fff;
+            background: #198754;
+            border-color: #198754;
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.28);
+        }
+
+        .user-free-gpu-card.active:hover {
+            background: #157347;
+            border-color: #157347;
+        }
+
+        .user-free-gpu-left {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 0;
+        }
+
+        .user-free-gpu-left i {
+            width: 14px;
+            min-width: 14px;
+            text-align: center;
+            color: #198754;
+        }
+
+        .user-free-gpu-card.active .user-free-gpu-left i {
+            color: #fff;
+        }
+
+        .user-free-gpu-label {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-weight: 600;
+        }
+
+        .user-free-gpu-count {
+            font-size: 18px;
+            line-height: 1.1;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .user-free-gpu-percent {
+            font-size: 12px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .user-free-gpu-progress {
+            height: 5px;
+            margin-top: 6px;
+            background: rgba(255, 255, 255, 0.10);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .user-free-gpu-progress-bar {
+            height: 100%;
+            width: 0;
+            border-radius: 3px;
+            background: #198754;
+            transition: width 0.25s ease;
+        }
 
         /* ===== Free Models / Users 列表项 ===== */
         .user-shortcut-btn {
-            width: 100%; margin-bottom: 5px;
-            display: flex; align-items: center; justify-content: space-between; gap: 7px;
-            padding: 7px 8px; color: #ced4da; background: #252a2e;
-            border: 1px solid #343a40; border-radius: 7px;
-            font-size: 12px; text-align: left; font-weight: 600;
+            width: 100%;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 7px;
+            padding: 7px 8px;
+            color: #ced4da;
+            background: #252a2e;
+            border: 1px solid #343a40;
+            border-radius: 7px;
+            font-size: 12px;
+            text-align: left;
+            font-weight: 600;
             transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
         }
-        .user-shortcut-btn:last-child { margin-bottom: 0; }
-        .user-shortcut-btn:hover { color: #fff; background: #2d3338; border-color: #495057; }
-        .user-shortcut-btn.active { color: #fff; background: #198754; border-color: #198754; box-shadow: 0 2px 8px rgba(25,135,84,0.28); }
-        .user-shortcut-btn.active:hover { background: #157347; border-color: #157347; }
 
-        .user-free-gpu-card.empty-btn,
-        .user-shortcut-btn.empty-btn { cursor: default !important; }
-        .user-free-gpu-card.empty-btn:hover, .user-shortcut-btn.empty-btn:hover,
-        .user-free-gpu-card.empty-btn:active, .user-shortcut-btn.empty-btn:active,
-        .user-free-gpu-card.empty-btn:focus, .user-shortcut-btn.empty-btn:focus {
-            background: #252a2e !important; border-color: #343a40 !important;
-            color: #ced4da !important; box-shadow: none !important;
-            transform: none !important; outline: none !important;
+        .user-shortcut-btn:last-child {
+            margin-bottom: 0;
         }
 
-        .user-shortcut-left { display: flex; align-items: center; gap: 7px; min-width: 0; }
-        .user-shortcut-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .user-gpu-count { flex-shrink: 0; font-size: 11px; color: #adb5bd; white-space: nowrap; }
+        .user-shortcut-btn:hover {
+            color: #fff;
+            background: #2d3338;
+            border-color: #495057;
+        }
+
+        .user-shortcut-btn.active {
+            color: #fff;
+            background: #198754;
+            border-color: #198754;
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.28);
+        }
+
+        .user-shortcut-btn.active:hover {
+            background: #157347;
+            border-color: #157347;
+        }
+
+        .user-free-gpu-card.empty-btn,
+        .user-shortcut-btn.empty-btn {
+            cursor: default !important;
+        }
+
+        .user-free-gpu-card.empty-btn:hover,
+        .user-shortcut-btn.empty-btn:hover,
+        .user-free-gpu-card.empty-btn:active,
+        .user-shortcut-btn.empty-btn:active,
+        .user-free-gpu-card.empty-btn:focus,
+        .user-shortcut-btn.empty-btn:focus {
+            background: #252a2e !important;
+            border-color: #343a40 !important;
+            color: #ced4da !important;
+            box-shadow: none !important;
+            transform: none !important;
+            outline: none !important;
+        }
+
+        .user-shortcut-left {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 0;
+        }
+
+        .user-shortcut-name {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .user-gpu-count {
+            flex-shrink: 0;
+            font-size: 11px;
+            color: #adb5bd;
+            white-space: nowrap;
+        }
+
         .user-shortcut-btn.active .user-gpu-count,
-        .user-shortcut-btn.active .user-gpu-count span { color: #fff !important; opacity: 1 !important; }
-        .user-gpu-shortcuts-empty { color: #6c757d; font-size: 12px; text-align: center; padding: 10px 5px; }
+        .user-shortcut-btn.active .user-gpu-count span {
+            color: #fff !important;
+            opacity: 1 !important;
+        }
+
+        .user-gpu-shortcuts-empty {
+            color: #6c757d;
+            font-size: 12px;
+            text-align: center;
+            padding: 10px 5px;
+        }
 
         /* =========================================================
            药丸样式
@@ -214,43 +508,83 @@
         .count-pill.pill-free {
             background: #198754;
             color: #ffffff;
-            box-shadow: 0 1px 3px rgba(25, 135, 84, 0.35), inset 0 1px 0 rgba(255,255,255,0.18);
+            box-shadow: 0 1px 3px rgba(25, 135, 84, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
         }
+
         .count-pill.pill-empty {
             background: #6b7280;
             color: #ffffff;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
+
         .count-pill.pill-user {
             background: #6b7280;
             color: #ffffff;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
 
-        .user-shortcut-btn:hover .count-pill.pill-free { box-shadow: 0 3px 8px rgba(25,135,84,0.5), inset 0 1px 0 rgba(255,255,255,0.2); }
-        .user-shortcut-btn:hover .count-pill.pill-user { box-shadow: inset 0 1px 0 rgba(255,255,255,0.12); }
+        .user-shortcut-btn:hover .count-pill.pill-free {
+            box-shadow: 0 3px 8px rgba(25, 135, 84, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .user-shortcut-btn:hover .count-pill.pill-user {
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        }
+
         .user-shortcut-btn.active .count-pill {
-            background: rgba(255,255,255,0.28);
+            background: rgba(255, 255, 255, 0.28);
             color: #fff;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
         }
 
-        .count-pill .pill-slash { opacity: 0.55; margin: 0 1px; }
-        .count-pill .pill-denom { opacity: 0.85; }
+        .count-pill .pill-slash {
+            opacity: 0.55;
+            margin: 0 1px;
+        }
+
+        .count-pill .pill-denom {
+            opacity: 0.85;
+        }
 
         /* ===== 工具页导航 ===== */
         .tools-nav button {
-            display: flex; align-items: center; width: 100%;
-            padding: 10px 12px; margin-bottom: 6px;
-            font-size: 13px; font-weight: 600;
-            color: #ced4da; background: #252a2e; border: 1px solid #343a40;
-            border-radius: 8px; text-align: left;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #ced4da;
+            background: #252a2e;
+            border: 1px solid #343a40;
+            border-radius: 8px;
+            text-align: left;
             transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
         }
-        .tools-nav button:last-child { margin-bottom: 0; }
-        .tools-nav button:hover { color: #fff; background: #2d3338; border-color: #495057; }
-        .tools-nav button.active { color: #fff; background: #198754; border-color: #198754; box-shadow: 0 2px 8px rgba(25,135,84,0.28); }
-        .tools-nav button i { width: 18px; text-align: center; margin-right: 8px; }
+
+        .tools-nav button:last-child {
+            margin-bottom: 0;
+        }
+
+        .tools-nav button:hover {
+            color: #fff;
+            background: #2d3338;
+            border-color: #495057;
+        }
+
+        .tools-nav button.active {
+            color: #fff;
+            background: #198754;
+            border-color: #198754;
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.28);
+        }
+
+        .tools-nav button i {
+            width: 18px;
+            text-align: center;
+            margin-right: 8px;
+        }
 
         /* ===== 工具页区块 ===== */
         .tool-section {
@@ -260,8 +594,11 @@
             overflow: hidden;
             background: #1b1f22;
         }
+
         .tool-section-header {
-            display: flex; align-items: center; justify-content: space-between;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             padding: 12px 16px;
             background: #252a2e;
             border-bottom: 1px solid #343a40;
@@ -269,22 +606,41 @@
             user-select: none;
             transition: background-color 0.16s ease;
         }
-        .tool-section-header:hover { background: #2d3338; }
+
+        .tool-section-header:hover {
+            background: #2d3338;
+        }
+
         .tool-section-header h5 {
-            margin: 0; font-size: 15px; font-weight: 700; color: #e9ecef;
-            display: flex; align-items: center; gap: 8px;
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+            color: #e9ecef;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .tool-section-header h5 i { color: #198754; }
+
+        .tool-section-header h5 i {
+            color: #198754;
+        }
+
         .tool-section-header .section-toggle-icon {
-            color: #adb5bd; transition: transform 0.25s ease;
+            color: #adb5bd;
+            transition: transform 0.25s ease;
         }
-        .tool-section.collapsed .section-toggle-icon { transform: rotate(-90deg); }
+
+        .tool-section.collapsed .section-toggle-icon {
+            transform: rotate(-90deg);
+        }
+
         .tool-section-body {
             padding: 16px;
             transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
             max-height: 8000px;
             opacity: 1;
         }
+
         .tool-section.collapsed .tool-section-body {
             max-height: 0;
             opacity: 0;
@@ -292,21 +648,41 @@
             padding-bottom: 0;
             overflow: hidden;
         }
-        .tool-section.active-section { box-shadow: 0 0 0 1px rgba(25,135,84,0.35); }
 
-        #tools-page { color: #dee2e6; }
+        .tool-section.active-section {
+            box-shadow: 0 0 0 1px rgba(25, 135, 84, 0.35);
+        }
+
+        #tools-page {
+            color: #dee2e6;
+        }
+
         #tools-page .text-muted,
         #tools-page .form-text,
         #tools-page .small.text-muted,
-        #tools-page small.text-muted { color: #adb5bd !important; }
+        #tools-page small.text-muted {
+            color: #adb5bd !important;
+        }
+
         #tools-page .form-label,
         #tools-page label,
-        #tools-page .form-label.text-muted { color: #ced4da !important; }
+        #tools-page .form-label.text-muted {
+            color: #ced4da !important;
+        }
+
         #tools-page h6,
-        #tools-page .card-title { color: #e9ecef !important; }
+        #tools-page .card-title {
+            color: #e9ecef !important;
+        }
+
         #tools-page h6.text-success,
-        #tools-page .card-title.text-success { color: #20c997 !important; }
-        #tools-page code.text-info { color: #6dd5fa !important; }
+        #tools-page .card-title.text-success {
+            color: #20c997 !important;
+        }
+
+        #tools-page code.text-info {
+            color: #6dd5fa !important;
+        }
 
         #notif-section .table {
             table-layout: fixed;
@@ -320,6 +696,7 @@
             color: #dee2e6;
             border-color: #343a40;
         }
+
         #notif-section .table thead tr th {
             background-color: #212529;
             color: #adb5bd;
@@ -330,69 +707,141 @@
             border-color: #343a40;
             white-space: nowrap;
         }
+
         #notif-section .table tbody tr td {
             border-color: #343a40;
             vertical-align: middle;
             color: #dee2e6;
             overflow: hidden;
         }
+
         #notif-section .table tbody tr td:nth-child(5) {
             padding-left: 10px;
             padding-right: 10px;
         }
-        #notif-section .table-bordered > :not(caption) > * > * { border-color: #343a40; }
-        #notif-section .table tr { position: relative; cursor: default; }
-        #notif-section .table > :not(caption) > * > * { padding: 14px 14px; }
-        #notif-section .table tbody tr:hover td { background-color: rgba(255,255,255,0.05) !important; }
-        #notif-section .text-muted,
-        #notif-section small.text-muted { color: #adb5bd !important; }
 
-        #notif-section .table tbody tr td:first-child { position: relative; }
+        #notif-section .table-bordered> :not(caption)>*>* {
+            border-color: #343a40;
+        }
+
+        #notif-section .table tr {
+            position: relative;
+            cursor: default;
+        }
+
+        #notif-section .table> :not(caption)>*>* {
+            padding: 14px 14px;
+        }
+
+        #notif-section .table tbody tr:hover td {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+        }
+
+        #notif-section .text-muted,
+        #notif-section small.text-muted {
+            color: #adb5bd !important;
+        }
+
+        #notif-section .table tbody tr td:first-child {
+            position: relative;
+        }
+
         #notif-section .table tbody tr:hover td:first-child::before {
             content: '';
-            position: absolute; left: 0; top: 0; bottom: 0; width: 3.5px;
-            background: #20c997; border-top-left-radius: 2px; border-bottom-left-radius: 2px;
-            box-shadow: 0 0 8px rgba(32,201,151,0.6);
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3.5px;
+            background: #20c997;
+            border-top-left-radius: 2px;
+            border-bottom-left-radius: 2px;
+            box-shadow: 0 0 8px rgba(32, 201, 151, 0.6);
         }
 
         @keyframes notifRowEnter {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         .notif-row-animated {
             animation: notifRowEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            transition: all 0.2s ease; position: relative;
+            transition: all 0.2s ease;
+            position: relative;
         }
 
         /* ===== 状态圆点：Running 黄色，Finish 绿色 ===== */
         @keyframes pulseGlow {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245,158,11,0.7); }
-            70% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(245,158,11,0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+            }
+
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+            }
         }
+
         .status-dot-pulse {
-            width: 7px; height: 7px; border-radius: 50%; display: inline-block;
-            background-color: #f59e0b; animation: pulseGlow 1.8s infinite ease-in-out;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            background-color: #f59e0b;
+            animation: pulseGlow 1.8s infinite ease-in-out;
             margin-right: 6px;
         }
+
         .status-dot-finished {
-            width: 7px; height: 7px; border-radius: 50%; display: inline-block;
-            background-color: #22c55e; margin-right: 6px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            background-color: #22c55e;
+            margin-right: 6px;
         }
 
         .notif-proc-pill {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 11.5px; padding: 3px 7px; border-radius: 6px;
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            color: #cbd5e1; transition: all 0.2s ease; max-width: 100%;
-            display: block; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            font-size: 11.5px;
+            padding: 3px 7px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            transition: all 0.2s ease;
+            max-width: 100%;
+            display: block;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
-        .notif-proc-pill:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.2); color: #fff; }
+
+        .notif-proc-pill:hover {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
 
         /* Duration: keep Running and Finish icons/text on exactly the same columns. */
         #notif-section .table tbody td:last-child {
             white-space: nowrap;
         }
+
         .notif-duration-value {
             display: inline-grid;
             grid-template-columns: 16px max-content;
@@ -404,7 +853,8 @@
             line-height: 1;
             text-align: left;
         }
-        .notif-duration-value > i {
+
+        .notif-duration-value>i {
             width: 16px;
             min-width: 16px;
             text-align: center;
@@ -412,16 +862,21 @@
             line-height: 1;
             opacity: 0.75;
         }
+
         .notif-duration-value .notif-duration {
             display: block;
             min-width: 0;
         }
 
         .notif-time-range {
-            display: flex; flex-direction: column; gap: 3px; font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            font-size: 11px;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             line-height: 1.4;
         }
+
         .notif-time-range .time-row {
             display: grid;
             grid-template-columns: 40px minmax(0, 1fr);
@@ -430,99 +885,221 @@
             white-space: nowrap;
             min-height: 17px;
         }
+
         .notif-time-range .time-label {
             display: inline-flex;
             align-items: center;
             justify-content: flex-start;
             width: 40px;
             min-width: 40px;
-            font-size: 9.5px; font-weight: 700; letter-spacing: 0.4px;
-            text-transform: uppercase; opacity: 0.75;
+            font-size: 9.5px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            opacity: 0.75;
             line-height: 1;
         }
-        .notif-time-range .time-start .time-label { color: #22c55e; }
-        .notif-time-range .time-end .time-label { color: #f59e0b; }
-        .notif-time-range .time-end.muted { color: #64748b; }
+
+        .notif-time-range .time-start .time-label {
+            color: #22c55e;
+        }
+
+        .notif-time-range .time-end .time-label {
+            color: #f59e0b;
+        }
+
+        .notif-time-range .time-end.muted {
+            color: #64748b;
+        }
 
         #tools-page .form-control,
         #tools-page .form-control:focus {
-            background-color: #252a2e; border-color: #343a40; color: #e9ecef; box-shadow: none;
+            background-color: #252a2e;
+            border-color: #343a40;
+            color: #e9ecef;
+            box-shadow: none;
         }
-        #tools-page .form-control::placeholder { color: #6c757d; }
+
+        #tools-page .form-control::placeholder {
+            color: #6c757d;
+        }
+
         #tools-page .table-dark {
             --bs-table-bg: transparent;
             --bs-table-color: #dee2e6;
             --bs-table-border-color: #343a40;
-            --bs-table-hover-bg: rgba(255,255,255,0.04);
+            --bs-table-hover-bg: rgba(255, 255, 255, 0.04);
             --bs-table-hover-color: #fff;
         }
-        #tools-page .card-body h6.mb-0.text-light { color: #e9ecef !important; }
+
+        #tools-page .card-body h6.mb-0.text-light {
+            color: #e9ecef !important;
+        }
 
         @media (max-width: 899.98px) {
-            .side-panel { display: none !important; }
+            .side-panel {
+                display: none !important;
+            }
         }
-        @media (min-width: 400px) and (max-width: 575.98px) { .col-xs-6 { flex: 0 0 auto; width: 50%; } }
+
+        @media (max-width: 767.98px) {
+            #update-timestamp {
+                display: none !important;
+            }
+
+            #connection-status {
+                display: none !important;
+            }
+        }
+
+        @media (min-width: 400px) and (max-width: 575.98px) {
+            .col-xs-6 {
+                flex: 0 0 auto;
+                width: 50%;
+            }
+        }
+
         @media (max-width: 575.98px) {
-            #gpu-cards-container .card-body { padding: 0.75rem; }
-            #gpu-cards-container .card-footer .row { font-size: 0.75rem; }
-            #gpu-cards-container .gpu-name { font-size: 0.85rem; margin-bottom: 0.5rem !important;}
+            #gpu-cards-container .card-body {
+                padding: 0.75rem;
+            }
+
+            #gpu-cards-container .card-footer .row {
+                font-size: 0.75rem;
+            }
+
+            #gpu-cards-container .gpu-name {
+                font-size: 0.85rem;
+                margin-bottom: 0.5rem !important;
+            }
         }
 
-        .table { margin-bottom: 0; }
-        footer a { transition: color 0.2s ease; }
-        footer a:hover { color: #20c997 !important; }
+        .table {
+            margin-bottom: 0;
+        }
 
-        .gpu-card-highlight > .card {
+        footer a {
+            transition: color 0.2s ease;
+        }
+
+        footer a:hover {
+            color: #20c997 !important;
+        }
+
+
+
+        .gpu-card-highlight>.card {
             border-color: #0088ff !important;
             box-shadow: 0 0 0 2px #0088ff,
-                        0 0 12px rgba(0,136,255,0.9),
-                        0 0 25px rgba(0,136,255,0.5) !important;
-            transform: translateY(-4px); z-index: 10;
+                0 0 12px rgba(0, 136, 255, 0.9),
+                0 0 25px rgba(0, 136, 255, 0.5) !important;
+            transform: translateY(-4px);
+            z-index: 10;
         }
+
         #gpu-cards-container .card {
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
         }
 
         /* ===== 主题开关 ===== */
         .theme-pill-track {
-            width: 58px; height: 34px; border-radius: 17px;
-            background-color: #171a1d; border: 1px solid #343a40;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 6px; cursor: pointer; position: relative; user-select: none;
+            width: 58px;
+            height: 34px;
+            border-radius: 17px;
+            background-color: #171a1d;
+            border: 1px solid #343a40;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 6px;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45);
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            font: inherit; outline: none;
+            font: inherit;
+            outline: none;
         }
-        .theme-pill-track:hover { border-color: #495057; }
-        .theme-pill-track:focus-visible { box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.45); }
+
+        .theme-pill-track:hover {
+            border-color: #495057;
+        }
+
+        .theme-pill-track:focus-visible {
+            box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.45);
+        }
 
         .theme-track-icon {
-            font-size: 14px; line-height: 1; z-index: 1;
-            display: flex; align-items: center; justify-content: center; width: 18px;
+            font-size: 14px;
+            line-height: 1;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
             transition: opacity 0.2s ease;
         }
-        .theme-track-icon.moon { color: #94a3b8; opacity: 0.3; }
-        .theme-track-icon.sun { color: #f59e0b; opacity: 0.3; }
+
+        .theme-track-icon.moon {
+            color: #94a3b8;
+            opacity: 0.3;
+        }
+
+        .theme-track-icon.sun {
+            color: #f59e0b;
+            opacity: 0.3;
+        }
 
         .theme-pill-thumb {
-            position: absolute; left: 3px; top: 3px;
-            width: 26px; height: 26px; border-radius: 50%;
-            background: #252a2e; border: 1px solid #495057;
-            display: flex; align-items: center; justify-content: center;
-            z-index: 2; box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #252a2e;
+            border: 1px solid #495057;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
             transform: translateX(0);
             transition: transform 0.3s cubic-bezier(0.34, 1.35, 0.64, 1), background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
         }
-        .theme-pill-thumb i { font-size: 18px; color: #38bdf8; transition: transform 0.4s ease, color 0.25s ease; }
 
-        body.light-mode .theme-pill-track { background-color: #e2e8f0; border-color: #cbd5e1; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08); }
-        body.light-mode .theme-track-icon.sun { opacity: 0.35; }
-        body.light-mode .theme-track-icon.moon { opacity: 0.25; color: #64748b; }
+        .theme-pill-thumb i {
+            font-size: 18px;
+            color: #38bdf8;
+            transition: transform 0.4s ease, color 0.25s ease;
+        }
+
+        body.light-mode .theme-pill-track {
+            background-color: #e2e8f0;
+            border-color: #cbd5e1;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        body.light-mode .theme-track-icon.sun {
+            opacity: 0.35;
+        }
+
+        body.light-mode .theme-track-icon.moon {
+            opacity: 0.25;
+            color: #64748b;
+        }
+
         body.light-mode .theme-pill-thumb {
-            transform: translateX(24px); background: #ffffff; border-color: #e2e8f0;
+            transform: translateX(24px);
+            background: #ffffff;
+            border-color: #e2e8f0;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.04);
         }
-        body.light-mode .theme-pill-thumb i { color: #f59e0b; transform: rotate(360deg); }
+
+        body.light-mode .theme-pill-thumb i {
+            color: #f59e0b;
+            transform: rotate(360deg);
+        }
 
         /* =========================================================
            浅色模式
@@ -542,26 +1119,32 @@
             background-color: #ffffff !important;
             border-color: #dee2e6 !important;
         }
+
         body.light-mode .navbar-brand,
         body.light-mode .navbar-brand b,
         body.light-mode .navbar-brand span {
             color: #212529 !important;
         }
+
         body.light-mode #mobile-menu-btn i {
             color: #212529 !important;
         }
+
         body.light-mode #update-timestamp {
             color: #6c757d !important;
         }
+
         body.light-mode .btn-outline-light {
             color: #495057;
             border-color: transparent;
         }
+
         body.light-mode .btn-outline-light:hover {
             color: #212529;
             background-color: rgba(0, 0, 0, 0.08);
             border-color: transparent;
         }
+
         body.light-mode .btn-outline-secondary {
             color: #495057;
             border-color: #dee2e6;
@@ -574,15 +1157,18 @@
             border-color: #e5e7eb;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
         }
+
         body.light-mode #user-gpu-shortcuts {
             background: transparent;
             border: none;
             box-shadow: none;
         }
+
         body.light-mode .side-panel-title {
             color: #495057;
             border-color: #e5e7eb;
         }
+
         body.light-mode .side-panel-title i {
             color: #6c757d;
         }
@@ -593,22 +1179,26 @@
             background: #f8f9fa;
             border-color: #e5e7eb;
         }
+
         body.light-mode .panel-btn:hover,
         body.light-mode .user-shortcut-btn:hover {
             color: #000;
             background: #e9ecef;
             border-color: #ced4da;
         }
+
         body.light-mode .panel-btn i,
         body.light-mode .user-shortcut-btn i {
             color: #6c757d;
         }
+
         body.light-mode .panel-btn.active,
         body.light-mode .user-shortcut-btn.active {
             color: #fff !important;
             background: #198754 !important;
             border-color: #198754 !important;
         }
+
         body.light-mode .panel-btn.active i,
         body.light-mode .user-shortcut-btn.active i,
         body.light-mode .panel-btn.active .panel-btn-name,
@@ -623,24 +1213,28 @@
             background: #f8f9fa;
             border-color: #e5e7eb;
         }
+
         body.light-mode .user-free-gpu-card:hover {
             color: #000;
             background: #e9ecef;
             border-color: #ced4da;
         }
+
         body.light-mode .user-free-gpu-card.active {
             color: #fff;
             background: #198754;
             border-color: #198754;
         }
+
         body.light-mode .user-free-gpu-card.active .user-free-gpu-label,
         body.light-mode .user-free-gpu-card.active .user-free-gpu-count,
         body.light-mode .user-free-gpu-card.active .user-free-gpu-percent,
         body.light-mode .user-free-gpu-card.active .user-free-gpu-left i {
             color: #fff !important;
         }
+
         body.light-mode .user-free-gpu-progress {
-            background: rgba(0,0,0,0.08);
+            background: rgba(0, 0, 0, 0.08);
         }
 
         body.light-mode .user-free-gpu-card.empty-btn:hover,
@@ -657,46 +1251,52 @@
         body.light-mode .count-pill.pill-free {
             background: #198754;
             color: #ffffff;
-            box-shadow: 0 1px 3px rgba(25, 135, 84, 0.3), inset 0 1px 0 rgba(255,255,255,0.28);
+            box-shadow: 0 1px 3px rgba(25, 135, 84, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.28);
         }
+
         body.light-mode .count-pill.pill-empty {
             background: #9ca3af;
             color: #ffffff;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
         }
+
         body.light-mode .count-pill.pill-user {
             background: #9ca3af;
             color: #ffffff;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
         }
+
         body.light-mode .user-shortcut-btn.active .count-pill {
-            background: rgba(255,255,255,0.28);
+            background: rgba(255, 255, 255, 0.28);
             color: #fff;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
         }
 
         body.light-mode #tools-page .card,
         body.light-mode #tools-page .card.bg-dark,
-        body.light-mode #dashboard-view > .card,
-        body.light-mode #dashboard-view > .card.bg-dark {
+        body.light-mode #dashboard-view>.card,
+        body.light-mode #dashboard-view>.card.bg-dark {
             background-color: #ffffff !important;
             border-color: #dee2e6 !important;
             color: #212529;
         }
+
         body.light-mode #tools-page .card-header,
-        body.light-mode #dashboard-view > .card .card-header {
+        body.light-mode #dashboard-view>.card .card-header {
             background-color: #f8f9fa !important;
             border-color: #dee2e6 !important;
             color: #212529;
         }
+
         body.light-mode #tools-page .card-header span,
         body.light-mode #tools-page .card-title,
-        body.light-mode #dashboard-view > .card .card-title,
-        body.light-mode #dashboard-view > .card .card-title.text-dark {
+        body.light-mode #dashboard-view>.card .card-title,
+        body.light-mode #dashboard-view>.card .card-title.text-dark {
             color: #212529 !important;
         }
+
         body.light-mode #tools-page .card-body,
-        body.light-mode #dashboard-view > .card .card-body {
+        body.light-mode #dashboard-view>.card .card-body {
             color: #212529;
         }
 
@@ -705,14 +1305,27 @@
             background: #ffffff !important;
             border-color: #dee2e6 !important;
         }
+
         body.light-mode .tool-section-header {
             background: #f8f9fa !important;
             border-color: #dee2e6 !important;
         }
-        body.light-mode .tool-section-header:hover { background: #e9ecef !important; }
-        body.light-mode .tool-section-header h5 { color: #212529 !important; }
-        body.light-mode .tool-section-header h5 i { color: #198754 !important; }
-        body.light-mode .tool-section-header .section-toggle-icon { color: #6c757d !important; }
+
+        body.light-mode .tool-section-header:hover {
+            background: #e9ecef !important;
+        }
+
+        body.light-mode .tool-section-header h5 {
+            color: #212529 !important;
+        }
+
+        body.light-mode .tool-section-header h5 i {
+            color: #198754 !important;
+        }
+
+        body.light-mode .tool-section-header .section-toggle-icon {
+            color: #6c757d !important;
+        }
 
         body.light-mode #tools-page .form-control,
         body.light-mode #tools-page .form-control:focus,
@@ -721,16 +1334,20 @@
             border-color: #ced4da !important;
             color: #212529 !important;
         }
+
         body.light-mode #tools-page .form-control::placeholder {
             color: #adb5bd !important;
         }
+
         body.light-mode #tools-page .form-control:focus {
             border-color: #86b7fe !important;
             box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
         }
+
         body.light-mode #tools-page code.text-info {
             color: #0d6efd !important;
         }
+
         body.light-mode #tools-page .text-muted,
         body.light-mode #tools-page .form-label,
         body.light-mode #tools-page label,
@@ -743,16 +1360,19 @@
             background: #f8f9fa;
             border-color: #dee2e6;
         }
+
         body.light-mode .tools-nav button:hover {
             color: #000;
             background: #e9ecef;
             border-color: #ced4da;
         }
+
         body.light-mode .tools-nav button.active {
             color: #fff;
             background: #198754;
             border-color: #198754;
         }
+
         body.light-mode .tools-nav button.active i {
             color: #fff;
         }
@@ -766,20 +1386,24 @@
             background-color: transparent !important;
             color: #212529 !important;
         }
-        body.light-mode #tools-page .table-dark > :not(caption) > * > * {
+
+        body.light-mode #tools-page .table-dark> :not(caption)>*>* {
             background-color: transparent !important;
             color: #212529 !important;
             border-color: #dee2e6 !important;
             box-shadow: none !important;
         }
+
         body.light-mode #tools-page .table thead tr th {
             color: #495057 !important;
             border-color: #dee2e6 !important;
         }
+
         body.light-mode #tools-page .table tbody tr td {
             color: #212529 !important;
             border-color: #dee2e6 !important;
         }
+
         body.light-mode #tools-page .table .badge.bg-secondary {
             background-color: #6c757d !important;
             color: #fff !important;
@@ -796,51 +1420,198 @@
             color: #212529;
             border-color: #dee2e6;
         }
+
         body.light-mode #notif-section .table thead tr th {
             background-color: #f8f9fa;
             color: #495057;
             border-color: #dee2e6;
         }
+
         body.light-mode #notif-section .table tbody tr td {
             border-color: #dee2e6;
             color: #212529;
         }
-        body.light-mode #notif-section .table-bordered > :not(caption) > * > * {
+
+        body.light-mode #notif-section .table-bordered> :not(caption)>*>* {
             border-color: #dee2e6;
         }
+
         body.light-mode #notif-section .table tbody tr:hover td {
             background-color: #f8fafc !important;
         }
-        body.light-mode .notif-proc-pill { background: #f1f5f9; border-color: #e2e8f0; color: #334155; }
-        body.light-mode .notif-proc-pill:hover { background: #e2e8f0; color: #0f172a; }
-        body.light-mode .notif-time-range .time-start .time-label { color: #16a34a; }
-        body.light-mode .notif-time-range .time-end .time-label { color: #d97706; }
+
+        body.light-mode .notif-proc-pill {
+            background: #f1f5f9;
+            border-color: #e2e8f0;
+            color: #334155;
+        }
+
+        body.light-mode .notif-proc-pill:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        body.light-mode .notif-time-range .time-start .time-label {
+            color: #16a34a;
+        }
+
+        body.light-mode .notif-time-range .time-end .time-label {
+            color: #d97706;
+        }
+
+        /* Notification controls mirror the homepage DataTables controls */
+        #notif-section .notif-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        #notif-section .notif-length {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            white-space: nowrap;
+        }
+
+        #notif-section .notif-length label,
+        #notif-section .notif-search-wrap label {
+            margin: 0;
+            font-size: .875rem;
+            color: #6c757d;
+            font-weight: 400;
+        }
+
+        #notif-section .notif-length select {
+            width: auto;
+            min-width: 72px;
+        }
+
+        #notif-section .notif-search-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 260px;
+            max-width: 100%;
+        }
+
+        #notif-section .notif-search-wrap>i {
+            position: absolute;
+            left: 10px;
+            z-index: 2;
+            color: #6c757d;
+            pointer-events: none;
+        }
+
+        #notif-section .notif-search-wrap input {
+            width: 100%;
+            padding-left: 31px;
+            padding-right: 32px;
+        }
+
+        #notif-section .notif-search-clear {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 0;
+            background: transparent;
+            color: #6c757d;
+            padding: 3px 6px;
+        }
+
+        #notif-section .notif-search-clear:hover {
+            color: #212529;
+        }
+
+        /* ===== 通知页 User：完整用户名 + 胶囊 ===== */
+        #notif-section .notif-user-cell {
+            white-space: nowrap !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            word-break: normal;
+        }
+
+        #notif-section .notif-user-name {
+            display: inline-flex;
+            align-items: center;
+            width: auto;
+            max-width: none;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: rgba(108, 117, 125, 0.16);
+            border: 1px solid rgba(108, 117, 125, 0.28);
+            color: #dee2e6;
+            white-space: nowrap;
+            overflow: visible;
+            text-overflow: clip;
+            word-break: normal;
+            overflow-wrap: normal;
+            line-height: 1.25;
+            font-size: 11px;
+            font-weight: 600;
+            vertical-align: middle;
+        }
+
+        #notif-section .notif-user-name i {
+            flex: 0 0 auto;
+            margin-right: 4px !important;
+            color: #94a3b8;
+            font-size: 10px;
+        }
+
+        body.light-mode #notif-section .notif-user-name {
+            background: #f1f5f9;
+            border-color: #dbe3ec;
+            color: #334155;
+        }
+
+        body.light-mode #notif-section .notif-user-name i {
+            color: #64748b;
+        }
+
+        @media (max-width: 576px) {
+            #notif-section .notif-controls {
+                align-items: stretch;
+            }
+
+            #notif-section .notif-search-wrap {
+                width: 100%;
+            }
+        }
 
         body.light-mode .dataTables_wrapper {
             color: #212529;
         }
+
         body.light-mode .dataTables_wrapper .dataTables_length select,
         body.light-mode .dataTables_wrapper .dataTables_filter input {
             background-color: #ffffff !important;
             border-color: #ced4da !important;
             color: #212529 !important;
         }
+
         body.light-mode .dataTables_wrapper .dataTables_info,
         body.light-mode .dataTables_wrapper .dataTables_length,
         body.light-mode .dataTables_wrapper .dataTables_filter,
         body.light-mode .dataTables_wrapper label {
             color: #495057;
         }
+
         body.light-mode .dataTables_wrapper .pagination .page-link {
             color: #198754;
             background-color: #fff;
             border-color: #dee2e6;
         }
+
         body.light-mode .dataTables_wrapper .pagination .page-item.active .page-link {
             background-color: #198754;
             border-color: #198754;
             color: #fff;
         }
+
         body.light-mode .dataTables_wrapper .pagination .page-item.disabled .page-link {
             color: #adb5bd;
             background-color: #fff;
@@ -851,15 +1622,18 @@
             color: #212529;
             border-color: #dee2e6;
         }
+
         body.light-mode #dataTable tbody tr td {
             color: #212529;
             border-color: #dee2e6;
         }
-        body.light-mode .table-striped > tbody > tr:nth-of-type(odd) > * {
+
+        body.light-mode .table-striped>tbody>tr:nth-of-type(odd)>* {
             --bs-table-accent-bg: rgba(0, 0, 0, 0.02);
             color: #212529;
         }
-        body.light-mode .table-bordered > :not(caption) > * > * {
+
+        body.light-mode .table-bordered> :not(caption)>*>* {
             border-color: #dee2e6;
         }
 
@@ -868,17 +1642,21 @@
             color: #212529 !important;
             border-color: #dee2e6 !important;
         }
+
         body.light-mode .offcanvas .text-light,
         body.light-mode .offcanvas h6 {
             color: #212529 !important;
         }
+
         body.light-mode .offcanvas .side-panel-title {
             color: #495057 !important;
             border-color: #dee2e6 !important;
         }
+
         body.light-mode .offcanvas .btn-close-white {
             filter: none;
         }
+
         body.light-mode .offcanvas .panel-btn,
         body.light-mode .offcanvas .user-shortcut-btn,
         body.light-mode .offcanvas .user-free-gpu-card {
@@ -886,6 +1664,7 @@
             background: #f8f9fa;
             border-color: #dee2e6;
         }
+
         body.light-mode .offcanvas .panel-btn:hover,
         body.light-mode .offcanvas .user-shortcut-btn:hover,
         body.light-mode .offcanvas .user-free-gpu-card:hover {
@@ -893,6 +1672,7 @@
             background: #e9ecef;
             border-color: #ced4da;
         }
+
         body.light-mode .offcanvas .panel-btn.active,
         body.light-mode .offcanvas .user-shortcut-btn.active,
         body.light-mode .offcanvas .user-free-gpu-card.active {
@@ -900,6 +1680,7 @@
             background: #198754 !important;
             border-color: #198754 !important;
         }
+
         body.light-mode .offcanvas .panel-btn.active i,
         body.light-mode .offcanvas .user-shortcut-btn.active i,
         body.light-mode .offcanvas .panel-btn.active .panel-btn-name,
@@ -908,22 +1689,40 @@
             color: #fff !important;
         }
 
-        body.light-mode footer a.text-white-50 {
+        body.light-mode footer a.text-white-50,
+        body.light-mode footer span.text-white-50 {
             color: #6c757d !important;
         }
+
         body.light-mode footer a.text-white-50:hover {
             color: #198754 !important;
         }
 
-        body.light-mode #connection-status.bg-secondary { background-color: #6c757d !important; color: #fff !important; }
-        body.light-mode #connection-status.bg-success   { background-color: #198754 !important; color: #fff !important; }
-        body.light-mode #connection-status.bg-warning   { background-color: #ffc107 !important; color: #000 !important; }
-        body.light-mode #connection-status.bg-danger    { background-color: #dc3545 !important; color: #fff !important; }
+        body.light-mode #connection-status.bg-secondary {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        body.light-mode #connection-status.bg-success {
+            background-color: #198754 !important;
+            color: #fff !important;
+        }
+
+        body.light-mode #connection-status.bg-warning {
+            background-color: #ffc107 !important;
+            color: #000 !important;
+        }
+
+        body.light-mode #connection-status.bg-danger {
+            background-color: #dc3545 !important;
+            color: #fff !important;
+        }
 
         body.light-mode #toggle-refresh.btn-outline-primary {
             color: #0d6efd;
             border-color: #0d6efd;
         }
+
         body.light-mode #toggle-refresh.btn-outline-primary:hover {
             background-color: #0d6efd;
             color: #fff;
@@ -932,6 +1731,7 @@
         body.light-mode #gpu-cards-container .card {
             border-color: transparent !important;
         }
+
         body.light-mode #gpu-cards-container .card,
         body.light-mode #gpu-cards-container .card .card-body,
         body.light-mode #gpu-cards-container .card .card-footer,
@@ -947,14 +1747,11 @@
 
         .legend-idle {
             opacity: 0.5;
-            background-image: repeating-linear-gradient(
-                45deg, rgba(255,255,255,.25) 0 4px, transparent 4px 8px
-            ) !important;
+            background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, .25) 0 4px, transparent 4px 8px) !important;
         }
+
         body.light-mode .legend-idle {
-            background-image: repeating-linear-gradient(
-                45deg, rgba(0,0,0,.2) 0 4px, transparent 4px 8px
-            ) !important;
+            background-image: repeating-linear-gradient(45deg, rgba(0, 0, 0, .2) 0 4px, transparent 4px 8px) !important;
         }
 
         .tooltip-inner {
@@ -967,68 +1764,48 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
+
+            *,
+            *::before,
+            *::after {
                 animation-duration: 0.001ms !important;
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.001ms !important;
             }
         }
 
-        /* ===== 通知分页控件 ===== */
+        /* ===== 通知分页控件（GitLab 极简风格） ===== */
         .notif-pagination-wrap {
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            gap: 12px;
+            gap: 8px;
             margin-top: 16px;
             flex-wrap: wrap;
         }
+
         .notif-pagination-wrap .page-info {
             font-size: 12px;
             color: #adb5bd;
             font-variant-numeric: tabular-nums;
             margin-right: auto;
+            white-space: nowrap;
         }
-        .notif-pagination-wrap .page-btn {
-            background: #252a2e;
-            border: 1px solid #343a40;
-            color: #ced4da;
-            width: 38px;
-            height: 38px;
-            border-radius: 8px;
+
+        .notif-pagination-wrap .page-numbers {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .notif-pagination-wrap .page-num {
+            min-width: 32px;
+            height: 32px;
+            padding: 0 8px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            transition: background 0.15s, border-color 0.15s, color 0.15s;
-            font-size: 14px;
-        }
-        .notif-pagination-wrap .page-btn:hover:not(:disabled) {
-            background: #2d3338;
-            border-color: #495057;
-            color: #fff;
-        }
-        .notif-pagination-wrap .page-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-        .notif-pagination-wrap .page-btn i {
-            pointer-events: none;
-        }
-        .notif-pagination-wrap .page-numbers {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
-        .notif-pagination-wrap .page-num {
-            min-width: 34px;
-            height: 34px;
-            padding: 0 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 6px;
+            border-radius: 7px;
             background: transparent;
             border: 1px solid transparent;
             color: #ced4da;
@@ -1036,55 +1813,151 @@
             font-weight: 600;
             cursor: pointer;
             font-variant-numeric: tabular-nums;
-            transition: all 0.15s;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
         }
+
         .notif-pagination-wrap .page-num:hover {
             background: #2d3338;
             border-color: #495057;
             color: #fff;
         }
+
         .notif-pagination-wrap .page-num.active {
+            background: #198754;
+            border-color: #198754;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.28);
+            cursor: default;
+        }
+
+        .notif-pagination-wrap .page-num.active:hover {
             background: #198754;
             border-color: #198754;
             color: #fff;
         }
 
+        /* 省略号：可点，点击跳一段 */
+        .notif-pagination-wrap .page-ellipsis {
+            min-width: 32px;
+            height: 32px;
+            padding: 0 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 7px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #6c757d;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 1px;
+            line-height: 1;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .notif-pagination-wrap .page-ellipsis:hover {
+            background: #2d3338;
+            color: #ced4da;
+        }
+
+        .notif-pagination-wrap .page-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 7px;
+            background: #252a2e;
+            border: 1px solid #343a40;
+            color: #ced4da;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .notif-pagination-wrap .page-btn:hover:not(:disabled) {
+            background: #2d3338;
+            border-color: #495057;
+            color: #fff;
+        }
+
+        .notif-pagination-wrap .page-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .notif-pagination-wrap .page-btn i {
+            pointer-events: none;
+        }
+
+        /* 浅色模式 */
         body.light-mode .notif-pagination-wrap .page-info {
             color: #6c757d;
         }
-        body.light-mode .notif-pagination-wrap .page-btn {
-            background: #f8f9fa;
-            border-color: #dee2e6;
-            color: #495057;
-        }
-        body.light-mode .notif-pagination-wrap .page-btn:hover:not(:disabled) {
-            background: #e9ecef;
-            border-color: #ced4da;
-            color: #212529;
-        }
+
         body.light-mode .notif-pagination-wrap .page-num {
             color: #495057;
         }
+
         body.light-mode .notif-pagination-wrap .page-num:hover {
             background: #e9ecef;
             border-color: #ced4da;
             color: #212529;
         }
+
         body.light-mode .notif-pagination-wrap .page-num.active {
+            background: #198754;
+            border-color: #198754;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.25);
+        }
+
+        body.light-mode .notif-pagination-wrap .page-num.active:hover {
             background: #198754;
             border-color: #198754;
             color: #fff;
         }
 
-        /* ===== 浅色模式下拉框适配 ===== */
-        body.light-mode #notifPageSizeSelect {
-            background-color: #ffffff !important;
-            border-color: #ced4da !important;
-            color: #212529 !important;
+        body.light-mode .notif-pagination-wrap .page-ellipsis {
+            color: #94a3b8;
         }
-        body.light-mode #notifPageSizeSelect:focus {
-            border-color: #86b7fe !important;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+
+        body.light-mode .notif-pagination-wrap .page-ellipsis:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        body.light-mode .notif-pagination-wrap .page-btn {
+            background: #f8f9fa;
+            border-color: #dee2e6;
+            color: #495057;
+        }
+
+        body.light-mode .notif-pagination-wrap .page-btn:hover:not(:disabled) {
+            background: #e9ecef;
+            border-color: #ced4da;
+            color: #212529;
+        }
+
+        /* ===== 通知分页下拉框：暗黑模式 ===== */
+        #notif-section #notifPageSizeSelect {
+            background-color: #252a2e !important;
+            border-color: #343a40 !important;
+            color: #dee2e6 !important;
+            color-scheme: dark;
+        }
+
+        #notif-section #notifPageSizeSelect option {
+            background-color: #252a2e !important;
+            color: #dee2e6 !important;
+        }
+
+        #notif-section #notifPageSizeSelect:focus {
+            border-color: #198754 !important;
+            box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.18) !important;
         }
 
         /* ===== GPU 设备列：数字图标 + 型号 ===== */
@@ -1134,11 +2007,13 @@
             background: rgba(25, 135, 84, 0.08);
             border-color: rgba(25, 135, 84, 0.25);
         }
+
         body.light-mode .gpu-index-icon:hover {
             color: #fff;
             background: #198754;
             border-color: #198754;
         }
+
         body.light-mode .gpu-model-text {
             color: #15803d;
         }
@@ -1148,7 +2023,8 @@
             width: min(280px, 100%);
             flex: 0 1 280px;
         }
-        .notif-search-wrap > i {
+
+        .notif-search-wrap>i {
             position: absolute;
             left: 11px;
             top: 50%;
@@ -1158,11 +2034,26 @@
             z-index: 2;
             font-size: 12px;
         }
+
         .notif-search-wrap .form-control {
             padding-left: 31px !important;
             padding-right: 32px !important;
             border-radius: 7px;
         }
+
+        /* type=search 自带的浏览器清除 X 与自定义清除按钮不能同时显示 */
+        #notif-section .notif-search-wrap input[type="search"]::-webkit-search-cancel-button,
+        #notif-section .notif-search-wrap input[type="search"]::-webkit-search-decoration {
+            -webkit-appearance: none;
+            appearance: none;
+            display: none;
+        }
+
+        #notif-section .notif-search-wrap input[type="search"] {
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
         .notif-search-clear {
             position: absolute;
             right: 4px;
@@ -1180,13 +2071,23 @@
             justify-content: center;
             z-index: 3;
         }
-        .notif-search-clear:hover { color: #fff; background: rgba(255,255,255,0.08); }
-        body.light-mode .notif-search-clear:hover { color: #212529; background: rgba(0,0,0,0.06); }
+
+        .notif-search-clear:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        body.light-mode .notif-search-clear:hover {
+            color: #212529;
+            background: rgba(0, 0, 0, 0.06);
+        }
+
         .notif-search-result-count {
             font-size: 11px;
             color: #6c757d;
             white-space: nowrap;
         }
+
         @media (max-width: 767.98px) {
             .notif-search-wrap {
                 width: 100%;
@@ -1200,28 +2101,344 @@
             color: #adb5bd;
             padding: 24px 0 !important;
         }
-    
+
         /* Notification table: keep Process/Command compact so Duration stays aligned. */
-        #notif-section .table { table-layout: fixed; }
+        #notif-section .table {
+            table-layout: fixed;
+        }
+
         #notif-section .table thead th:nth-child(1),
-        #notif-section .table tbody td:nth-child(1) { width: 8%; }
+        #notif-section .table tbody td:nth-child(1) {
+            width: 8%;
+        }
+
         #notif-section .table thead th:nth-child(2),
-        #notif-section .table tbody td:nth-child(2) { width: 10%; }
+        #notif-section .table tbody td:nth-child(2) {
+            width: 10%;
+        }
+
         #notif-section .table thead th:nth-child(3),
-        #notif-section .table tbody td:nth-child(3) { width: 13%; }
+        #notif-section .table tbody td:nth-child(3) {
+            width: 13%;
+        }
+
         #notif-section .table thead th:nth-child(4),
-        #notif-section .table tbody td:nth-child(4) { width: 16%; }
+        #notif-section .table tbody td:nth-child(4) {
+            width: 16%;
+        }
+
         #notif-section .table thead th:nth-child(5),
-        #notif-section .table tbody td:nth-child(5) { width: 23%; }
+        #notif-section .table tbody td:nth-child(5) {
+            width: 23%;
+        }
+
         #notif-section .table thead th:nth-child(6),
-        #notif-section .table tbody td:nth-child(6) { width: 16%; }
+        #notif-section .table tbody td:nth-child(6) {
+            width: 16%;
+        }
+
         #notif-section .table thead th:nth-child(7),
-        #notif-section .table tbody td:nth-child(7) { width: 14%; }
-        #notif-section .notif-proc-pill { max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 10.5px; }
-        #notif-section .notif-duration-value { display: inline-flex; align-items: center; gap: 6px; min-width: 108px; }
-        #notif-section .notif-duration-value > i { width: 14px; min-width: 14px; text-align: center; }
+        #notif-section .table tbody td:nth-child(7) {
+            width: 14%;
+        }
+
+        #notif-section .notif-proc-pill {
+            max-width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-size: 10.5px;
+        }
+
+        #notif-section .notif-duration-value {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 108px;
+        }
+
+        #notif-section .notif-duration-value>i {
+            width: 14px;
+            min-width: 14px;
+            text-align: center;
+        }
+
         @media (max-width: 900px) {
-            #notif-section .table { min-width: 980px; table-layout: fixed; }
+            #notif-section .table {
+                min-width: 980px;
+                table-layout: fixed;
+            }
+        }
+
+        /* =========================================================
+           最终修复：白天模式下拉框（覆盖所有 select）
+           ========================================================= */
+        html {
+            color-scheme: dark;
+        }
+
+        html.light-mode {
+            color-scheme: light !important;
+        }
+
+        html.light-mode select,
+        html.light-mode .form-select,
+        html.light-mode .dataTables_wrapper select,
+        body.light-mode select,
+        body.light-mode .form-select,
+        body.light-mode .dataTables_wrapper select {
+            background-color: #ffffff !important;
+            color: #212529 !important;
+            border-color: #ced4da !important;
+            color-scheme: light !important;
+        }
+
+        html.light-mode select option,
+        html.light-mode .form-select option,
+        body.light-mode select option,
+        body.light-mode .form-select option {
+            background-color: #ffffff !important;
+            color: #212529 !important;
+        }
+
+        html.light-mode #notif-section #notifPageSizeSelect,
+        body.light-mode #notif-section #notifPageSizeSelect {
+            background-color: #ffffff !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 0.75rem center !important;
+            background-size: 16px 12px !important;
+            border-color: #ced4da !important;
+            color: #212529 !important;
+        }
+
+        html.light-mode #notif-section #notifPageSizeSelect option,
+        body.light-mode #notif-section #notifPageSizeSelect option {
+            background-color: #ffffff !important;
+            color: #212529 !important;
+        }
+
+        html.light-mode input,
+        html.light-mode textarea,
+        html.light-mode .form-control,
+        body.light-mode input,
+        body.light-mode textarea,
+        body.light-mode .form-control {
+            color-scheme: light !important;
+        }
+
+        html:not(.light-mode) select,
+        html:not(.light-mode) .form-select {
+            color-scheme: dark;
+        }
+    
+
+        /* =========================================================
+           TASK NOTIFICATIONS — rebuilt responsive table layout
+           Desktop: 100% of available width, percentage columns.
+           Mobile: preserve column readability and allow horizontal scroll.
+           Process / Command is the flexible content column and truncates.
+           ========================================================= */
+        #notif-section .table-responsive {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+            overflow-y: visible;
+        }
+
+        #notif-section .table-responsive > table {
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: none;
+            table-layout: fixed !important;
+            margin: 0;
+        }
+
+        /* 100% exactly: 9 + 12 + 13 + 15 + 23 + 18 + 10 */
+        #notif-section .table thead th:nth-child(1),
+        #notif-section .table tbody td:nth-child(1) { width: 9% !important; }
+        #notif-section .table thead th:nth-child(2),
+        #notif-section .table tbody td:nth-child(2) { width: 8% !important; }
+        #notif-section .table thead th:nth-child(3),
+        #notif-section .table tbody td:nth-child(3) { width: 13% !important; }
+        #notif-section .table thead th:nth-child(4),
+        #notif-section .table tbody td:nth-child(4) { width: 15% !important; }
+        #notif-section .table thead th:nth-child(5),
+        #notif-section .table tbody td:nth-child(5) { width: 27% !important; }
+        #notif-section .table thead th:nth-child(6),
+        #notif-section .table tbody td:nth-child(6) { width: 18% !important; }
+        #notif-section .table thead th:nth-child(7),
+        #notif-section .table tbody td:nth-child(7) { width: 10% !important; }
+
+        /* Headers: never wrap. */
+        #notif-section .table thead th {
+            white-space: nowrap !important;
+            overflow: hidden;
+            text-overflow: clip;
+            vertical-align: middle;
+        }
+
+        /* Body cells share one predictable alignment system. */
+        #notif-section .table tbody td {
+            vertical-align: middle !important;
+            overflow: hidden !important;
+            min-width: 0;
+        }
+
+        /* Status: keep the badge on one line. */
+        #notif-section .table tbody td:nth-child(1) {
+            white-space: nowrap !important;
+            text-align: left;
+        }
+        #notif-section .table tbody td:nth-child(1) .badge,
+        #notif-section .table tbody td:nth-child(1) > span {
+            white-space: nowrap !important;
+            max-width: 100%;
+        }
+
+        /* User: capsule stays intact; long names truncate inside the capsule. */
+        #notif-section .notif-user-cell {
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: clip !important;
+        }
+        #notif-section .notif-user-name {
+            display: inline-flex !important;
+            align-items: center;
+            vertical-align: middle;
+            max-width: 100% !important;
+            min-width: 0;
+            box-sizing: border-box;
+            padding: 2px 7px;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            word-break: normal !important;
+        }
+        #notif-section .notif-user-name i {
+            flex: 0 0 auto !important;
+        }
+
+        /* Node: one line, ellipsis only inside Node. */
+        #notif-section .table tbody td:nth-child(3) {
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        /* Devices: ALL GPU chips + model stay on one line. */
+        #notif-section .table tbody td:nth-child(4) {
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: clip !important;
+        }
+        #notif-section .gpu-devices-wrap {
+            display: flex !important;
+            align-items: center;
+            gap: 4px;
+            min-width: 0;
+            width: 100%;
+            flex-wrap: nowrap !important;
+            white-space: nowrap !important;
+            overflow: hidden;
+        }
+        #notif-section .gpu-index-icon,
+        #notif-section .gpu-model-text {
+            flex: 0 0 auto !important;
+            white-space: nowrap !important;
+        }
+        #notif-section .gpu-model-text {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Process / Command: the only deliberately truncating content column. */
+        #notif-section .table tbody td:nth-child(5) {
+            min-width: 0 !important;
+            overflow: hidden !important;
+        }
+        #notif-section .notif-proc-pill {
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box;
+            overflow: hidden !important;
+            white-space: nowrap !important;
+            text-overflow: ellipsis !important;
+        }
+
+        /* Start / End Time: labels and timestamps stay on one line. */
+        #notif-section .table tbody td:nth-child(6) {
+            white-space: nowrap !important;
+            overflow: hidden !important;
+        }
+        #notif-section .notif-time-range {
+            width: 100%;
+            min-width: 0;
+        }
+        #notif-section .notif-time-range .time-row {
+            display: flex !important;
+            align-items: center;
+            flex-wrap: nowrap !important;
+            width: 100%;
+            min-width: 0;
+            white-space: nowrap !important;
+            overflow: hidden;
+        }
+        #notif-section .notif-time-range .time-label {
+            flex: 0 0 auto !important;
+            margin-right: 8px;
+        }
+        #notif-section .notif-time-range .time-row > span:last-child {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap !important;
+        }
+
+        /* Duration: compact and aligned to the left. */
+        #notif-section .table tbody td:nth-child(7) {
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-align: left;
+        }
+        #notif-section .notif-duration-value {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 6px;
+            max-width: 100%;
+            white-space: nowrap !important;
+        }
+        #notif-section .notif-duration-value > span {
+            white-space: nowrap !important;
+        }
+
+        /* Keep cell padding compact so the percentage layout remains usable. */
+        #notif-section .table > :not(caption) > * > * {
+            padding: 10px 10px;
+        }
+
+        /* Phones: do NOT squeeze seven columns into an unreadable width. */
+        @media (max-width: 767.98px) {
+            #notif-section .table-responsive {
+                overflow-x: auto !important;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+            }
+
+            #notif-section .table-responsive > table {
+                width: 100% !important;
+                min-width: 980px !important;
+                table-layout: fixed !important;
+            }
+
+            #notif-section .table > :not(caption) > * > * {
+                padding: 10px 10px;
+            }
         }
 </style>
 
@@ -1231,8 +2448,11 @@
                 var t = localStorage.getItem('gpumonitor-theme') || 'dark';
                 if (t === 'light') {
                     document.documentElement.classList.add('light-mode');
+                    document.documentElement.style.colorScheme = 'light';
+                } else {
+                    document.documentElement.style.colorScheme = 'dark';
                 }
-            } catch (e) {}
+            } catch (e) { }
         })();
     </script>
 </head>
@@ -1273,10 +2493,12 @@
         <div class="tools-nav" id="tools-nav"></div>
     </aside>
 
-    <div class="offcanvas offcanvas-start bg-dark text-white border-end border-secondary" tabindex="-1" id="mobileFilters" style="width: 280px;">
+    <div class="offcanvas offcanvas-start bg-dark text-white border-end border-secondary" tabindex="-1"
+        id="mobileFilters" style="width: 280px;">
         <div class="offcanvas-header border-bottom border-secondary py-2">
             <h6 class="offcanvas-title fw-bold text-light"><i class="fas fa-filter me-2 text-muted"></i>Filters</h6>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"
+                aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
             <div class="mb-4">
@@ -1300,36 +2522,39 @@
 
     <nav class="navbar navbar-expand navbar-dark bg-dark border-bottom border-secondary sticky-top">
         <div class="container d-flex align-items-center">
-            <button id="mobile-menu-btn" class="btn btn-outline-secondary border-0 d-none align-items-center justify-content-center me-2 p-0" type="button" 
-                data-bs-toggle="offcanvas" data-bs-target="#mobileFilters" style="width:38px; height:38px;">
+            <button id="mobile-menu-btn"
+                class="btn btn-outline-secondary border-0 d-none align-items-center justify-content-center me-2 p-0"
+                type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileFilters"
+                style="width:38px; height:38px;">
                 <i class="fas fa-bars fa-lg text-light"></i>
             </button>
 
-            <a class="navbar-brand d-flex align-items-center m-0 p-0" href="#" id="navbar-brand-btn" title="Back to dashboard">
+            <a class="navbar-brand d-flex align-items-center m-0 p-0" href="#" id="navbar-brand-btn"
+                title="Back to dashboard">
                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 32 32" class="me-2">
                     <path fill="#80bc00"
                         d="M12.447 12.265v-1.674q.244-.018.494-.026c4.577-.143 7.581 3.934 7.581 3.934S17.278 19 13.8 19a4.2 4.2 0 0 1-1.353-.217v-5.071c1.782.215 2.14 1 3.212 2.788l2.383-2.009a6.3 6.3 0 0 0-4.672-2.281a9 9 0 0 0-.923.055m0-5.529v2.5q.246-.02.494-.03c6.366-.214 10.513 5.221 10.513 5.221s-4.764 5.792-9.726 5.792a7.4 7.4 0 0 1-1.281-.112v1.545a9 9 0 0 0 1.067.069c4.618 0 7.958-2.358 11.192-5.15c.535.43 2.731 1.474 3.182 1.932c-3.075 2.574-10.241 4.649-14.3 4.649c-.392 0-.769-.024-1.138-.06v2.172H30V6.736Zm0 12.051v1.32c-4.271-.762-5.457-5.2-5.457-5.2a9.23 9.23 0 0 1 5.457-2.64v1.447h-.006a4.1 4.1 0 0 0-3.184 1.456s.782 2.811 3.19 3.62m-7.586-4.077a10.58 10.58 0 0 1 7.586-4.122V9.236C6.848 9.685 2 14.427 2 14.427s2.746 7.939 10.447 8.665v-1.44c-5.647-.711-7.586-6.939-7.586-6.939" />
                 </svg>
-                <b class="d-none d-sm-inline">GPU</b><span class="d-none d-sm-inline">&nbsp;Monitor</span>
-                <span class="d-sm-none fw-bold fs-5">Monitor</span>
+                <b>GPU</b><span>&nbsp;Monitor</span>
             </a>
 
             <div class="d-flex align-items-center gap-2 gap-md-3 ms-auto">
-                <div class="d-flex flex-column flex-md-row align-items-end align-items-md-center gap-0 gap-md-3 text-white small">
+                <div
+                    class="d-flex flex-column flex-md-row align-items-end align-items-md-center gap-0 gap-md-3 text-white small">
                     <span id="connection-status" class="badge bg-secondary mb-1 mb-md-0">Connecting...</span>
                     <div id="update-timestamp" class="text-white-50" style="font-size: 0.75rem;">Waiting...</div>
                 </div>
 
-                <button class="btn btn-outline-light btn-icon-only border-0" id="notifications-btn" title="Task Notifications">
+                <button class="btn btn-outline-light btn-icon-only border-0" id="notifications-btn"
+                    title="Task Notifications">
                     <i class="fas fa-bell fa-lg"></i>
                 </button>
                 <button class="btn btn-outline-light btn-icon-only border-0" id="settings-btn" title="Settings">
                     <i class="fas fa-cog fa-lg"></i>
                 </button>
 
-                <button type="button" class="theme-pill-track" id="theme-switch"
-                        role="switch" aria-checked="false" aria-label="Toggle light/dark theme"
-                        title="Toggle color theme (Light / Dark)">
+                <button type="button" class="theme-pill-track" id="theme-switch" role="switch" aria-checked="false"
+                    aria-label="Toggle light/dark theme" title="Toggle color theme (Light / Dark)">
                     <span class="theme-track-icon moon" aria-hidden="true"><i class="fas fa-moon"></i></span>
                     <span class="theme-track-icon sun" aria-hidden="true"><i class="fas fa-sun"></i></span>
                     <div class="theme-pill-thumb" aria-hidden="true">
@@ -1401,24 +2626,26 @@
                     <span class="section-toggle-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="tool-section-body">
-                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <select id="notifPageSizeSelect" class="form-select form-select-sm" style="width:auto;">
+                    <div class="notif-controls">
+                        <div class="notif-length">
+                            <label for="notifPageSizeSelect">Show</label>
+                            <select id="notifPageSizeSelect" class="form-select form-select-sm"
+                                aria-label="Entries per page">
                                 <option value="5">5</option>
                                 <option value="10" selected>10</option>
                                 <option value="25">25</option>
                                 <option value="50">50</option>
                                 <option value="100">100</option>
                             </select>
-                            <span class="text-muted small" style="white-space:nowrap;">entries per page</span>
+                            <label for="notifPageSizeSelect">entries per page</label>
                         </div>
                         <div class="notif-search-wrap">
+                            <label class="visually-hidden" for="notifSearchInput">Search</label>
                             <i class="fas fa-search" aria-hidden="true"></i>
                             <input id="notifSearchInput" type="search" class="form-control form-control-sm"
-                                   placeholder="Search notifications..." autocomplete="off"
-                                   aria-label="Search notifications">
+                                placeholder="Search..." autocomplete="off" aria-label="Search notifications">
                             <button type="button" id="notifSearchClear" class="notif-search-clear d-none"
-                                    title="Clear search" aria-label="Clear search">
+                                title="Clear search" aria-label="Clear search">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -1427,14 +2654,14 @@
                         <table class="table table-striped table-bordered table-hover mb-0 align-middle" width="100%">
                             <thead>
                                 <tr>
-    <th style="width: 8%;">Status</th>
-    <th style="width: 10%;">User</th>
-    <th style="width: 15%;">Node</th>
-    <th style="width: 10%;">Devices</th>
-    <th>Process / Command</th>
-    <th style="width: 16%;">Start / End Time</th>
-    <th style="width: 14%;">Duration</th>
-</tr>
+                                    <th style="width: 8%;">Status</th>
+                                    <th style="width: 10%;">User</th>
+                                    <th style="width: 15%;">Node</th>
+                                    <th style="width: 10%;">Devices</th>
+                                    <th>Process / Command</th>
+                                    <th style="width: 16%;">Start / End Time</th>
+                                    <th style="width: 14%;">Duration</th>
+                                </tr>
                             </thead>
                             <tbody id="full-notif-table-body"></tbody>
                         </table>
@@ -1443,8 +2670,12 @@
                     <div class="notif-pagination-wrap" id="notifPagination">
                         <span class="page-info" id="notifPageInfo">第 1 页 / 共 1 页</span>
                         <div class="page-numbers" id="notifPageNumbers"></div>
-                        <button class="page-btn" id="notifPrevBtn" title="上一页" aria-label="上一页"><i class="fas fa-chevron-left"></i></button>
-                        <button class="page-btn" id="notifNextBtn" title="下一页" aria-label="下一页"><i class="fas fa-chevron-right"></i></button>
+                        <button class="page-btn" id="notifPrevBtn" title="上一页" aria-label="上一页">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="page-btn" id="notifNextBtn" title="下一页" aria-label="下一页">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1464,7 +2695,8 @@
                             <form id="add-server-form" class="row g-2">
                                 <div class="col-md-3">
                                     <label class="form-label small text-muted mb-1">Hostname / IP</label>
-                                    <input type="text" class="form-control" id="new-host" placeholder="192.168.1.x" required>
+                                    <input type="text" class="form-control" id="new-host" placeholder="192.168.1.x"
+                                        required>
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label small text-muted mb-1">Port</label>
@@ -1476,7 +2708,8 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label small text-muted mb-1">Password</label>
-                                    <input type="password" class="form-control" id="new-pass" placeholder="Password" required>
+                                    <input type="password" class="form-control" id="new-pass" placeholder="Password"
+                                        required>
                                 </div>
                                 <div class="col-md-1 d-flex align-items-end">
                                     <button type="submit" class="btn btn-success w-100" title="Add server">
@@ -1498,7 +2731,8 @@
                             </div>
                             <textarea id="bulk-servers-textarea" class="form-control" rows="4"
                                 placeholder="192.168.1.10,22,root,secretpass&#10;192.168.1.11,22,root,secretpass"></textarea>
-                            <div class="form-text text-muted">Lines without 4 comma-separated values will be ignored. Existing hostnames are skipped.</div>
+                            <div class="form-text text-muted">Lines without 4 comma-separated values will be ignored.
+                                Existing hostnames are skipped.</div>
                             <button id="bulk-add-btn" class="btn btn-success mt-3">
                                 <i class="fas fa-plus me-1"></i>Add Servers
                             </button>
@@ -1507,9 +2741,11 @@
 
                     <div class="card bg-dark border-secondary mb-0">
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom border-secondary pb-2">
+                            <div
+                                class="d-flex justify-content-between align-items-center mb-2 border-bottom border-secondary pb-2">
                                 <h6 class="mb-0 text-light"><i class="fas fa-list me-2"></i>Managed Servers List</h6>
-                                <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Drag <i class="fas fa-bars mx-1"></i> to reorder</small>
+                                <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Drag <i
+                                        class="fas fa-bars mx-1"></i> to reorder</small>
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-dark table-hover align-middle mb-0">
@@ -1537,9 +2773,14 @@
             <div class="container">
                 <div class="text-center">
                     <small>
-                        <a href="https://github.com/YYYYYuanZi/GPUMonitor" class="text-white-50 text-decoration-none transition">
+                        <a href="https://github.com/YYYYYuanZi/GPUMonitor"
+                            class="text-white-50 text-decoration-none transition">
                             <i class="fab fa-github"></i> YYYYYuanZi/GPUMonitor | 2026
                         </a>
+                        <span class="text-white-50 mx-2">·</span>
+                        <span class="text-white-50">
+                            <i class="fas fa-eye me-1"></i>今日访问量 <span id="today-visit-count">--</span>
+                        </span>
                     </small>
                 </div>
             </div>
@@ -1550,6 +2791,25 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/2.0.3/js/dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/2.0.3/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        (function () {
+            try {
+                fetch('/api/track', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: location.pathname,
+                        referrer: document.referrer || '',
+                        screen: `${screen.width}x${screen.height}`,
+                        language: navigator.language || '',
+                        tz: Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+                    }),
+                    keepalive: true
+                }).catch(function () { });
+            } catch (e) { }
+        })();
+    </script>
 
     <script>
         const THEME_KEY = 'gpumonitor-theme';
@@ -1651,7 +2911,7 @@
                 stopNotifRefresh();
                 requestAnimationFrame(updateShortcutPositions);
                 if (dataTable) {
-                    try { dataTable.columns.adjust(); dataTable.draw(false); } catch (e) {}
+                    try { dataTable.columns.adjust(); dataTable.draw(false); } catch (e) { }
                 }
             }
             window.scrollTo({ top: 0, behavior: 'auto' });
@@ -1863,24 +3123,78 @@
                     : `第 ${page} 页 / 共 ${totalPages} 页 · ${notifTotalItems} entries`;
             }
 
+            // 只显示：当前页两侧各 1 个数字，其余用省略号
             const pageNumsContainer = document.getElementById('notifPageNumbers');
             if (pageNumsContainer) {
                 pageNumsContainer.innerHTML = '';
-                const maxVisible = 7;
-                let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
-                let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-                if (endPage - startPage + 1 < maxVisible) {
-                    startPage = Math.max(1, endPage - maxVisible + 1);
+
+                const pagesToShow = [];
+                const total = totalPages;
+                const current = page;
+
+                if (total <= 5) {
+                    for (let i = 1; i <= total; i++) pagesToShow.push(i);
+                } else {
+                    pagesToShow.push(1);
+
+                    const left = Math.max(2, current - 1);
+                    const right = Math.min(total - 1, current + 1);
+
+                    if (left > 2) pagesToShow.push('ellipsis-left');
+
+                    for (let i = left; i <= right; i++) pagesToShow.push(i);
+
+                    if (right < total - 1) pagesToShow.push('ellipsis-right');
+
+                    pagesToShow.push(total);
                 }
-                for (let i = startPage; i <= endPage; i++) {
-                    const numBtn = document.createElement('button');
-                    numBtn.className = 'page-num' + (i === page ? ' active' : '');
-                    numBtn.textContent = i;
-                    numBtn.addEventListener('click', () => {
-                        if (i !== notifCurrentPage) fetchNotifications(i, notifPageSize, true);
-                    });
-                    pageNumsContainer.appendChild(numBtn);
+
+                // 去重
+                const seen = new Set();
+                const cleaned = [];
+                for (const item of pagesToShow) {
+                    if (typeof item === 'number') {
+                        if (seen.has(item)) continue;
+                        seen.add(item);
+                    }
+                    cleaned.push(item);
                 }
+
+                cleaned.forEach(item => {
+                    if (typeof item === 'number') {
+                        const numBtn = document.createElement('button');
+                        numBtn.type = 'button';
+                        numBtn.className = 'page-num' + (item === current ? ' active' : '');
+                        numBtn.textContent = item;
+                        if (item === current) {
+                            numBtn.setAttribute('aria-current', 'page');
+                        }
+                        numBtn.addEventListener('click', () => {
+                            if (item !== notifCurrentPage) fetchNotifications(item, notifPageSize, true);
+                        });
+                        pageNumsContainer.appendChild(numBtn);
+                    } else {
+                        const span = document.createElement('button');
+                        span.type = 'button';
+                        span.className = 'page-ellipsis';
+                        span.textContent = '…';
+                        span.title = item === 'ellipsis-left' ? '向前跳转' : '向后跳转';
+                        span.setAttribute('aria-label', item === 'ellipsis-left' ? '向前跳转' : '向后跳转');
+                        span.addEventListener('click', () => {
+                            const step = 5;
+                            let target;
+                            if (item === 'ellipsis-left') {
+                                target = Math.max(1, notifCurrentPage - step);
+                            } else {
+                                target = Math.min(notifTotalPages, notifCurrentPage + step);
+                            }
+                            if (target !== notifCurrentPage) {
+                                fetchNotifications(target, notifPageSize, true);
+                            }
+                        });
+                        pageNumsContainer.appendChild(span);
+                    }
+                });
             }
 
             const prevBtn = document.getElementById('notifPrevBtn');
@@ -1940,7 +3254,7 @@
                     data-start-time="${escapeHtml(n.startTime || '')}"
                     style="animation-delay: ${delay}s;">
                     <td>${eventBadge}</td>
-                    <td><span class="badge bg-secondary text-light px-2 py-1"><i class="fas fa-user me-1" aria-hidden="true"></i>${escapeHtml(n.user)}</span></td>
+                    <td class="notif-user-cell"><span class="notif-user-name" title="${escapeHtml(n.user)}"><i class="fas fa-user" aria-hidden="true"></i>${escapeHtml(n.user)}</span></td>
                     <td class="fw-bold"><i class="fas fa-server me-1 opacity-75" aria-hidden="true"></i>${escapeHtml(n.server)}</td>
                     <td>${gpuDevices}</td>
                     <td><span class="notif-proc-pill text-truncate" title="${escapeHtml(procText)}">${escapeHtml(procText)}</span></td>
@@ -1975,7 +3289,7 @@
 
         function highlightCards(keys) {
             clearHighlights();
-            keys.forEach(function(key) {
+            keys.forEach(function (key) {
                 const cardWrapper = gpuCardMap.get(key);
                 if (cardWrapper) cardWrapper.classList.add('gpu-card-highlight');
             });
@@ -2167,6 +3481,7 @@
 
             const prevBtn = document.getElementById('notifPrevBtn');
             const nextBtn = document.getElementById('notifNextBtn');
+
             if (prevBtn) {
                 prevBtn.addEventListener('click', function () {
                     if (notifCurrentPage > 1) {
@@ -2184,19 +3499,14 @@
 
             const pageSizeSelect = document.getElementById('notifPageSizeSelect');
             if (pageSizeSelect) {
-                try {
-                    const saved = localStorage.getItem('gpumonitor-notif-page-size');
-                    if (saved && [5,10,25,50,100].includes(Number(saved))) {
-                        pageSizeSelect.value = saved;
-                        notifPageSize = Number(saved);
-                    }
-                } catch (e) {}
+                // Notifications always open with the same default as the task table: 10 entries.
+                pageSizeSelect.value = '10';
+                notifPageSize = 10;
 
                 pageSizeSelect.addEventListener('change', function () {
                     const newSize = Number(this.value) || 10;
                     notifPageSize = newSize;
                     notifCurrentPage = 1;
-                    try { localStorage.setItem('gpumonitor-notif-page-size', String(newSize)); } catch (e) {}
                     fetchNotifications(1, newSize, true);
                 });
             }
@@ -2252,7 +3562,24 @@
             loadServerShortcuts();
             fetchData();
             loadSettings();
+            fetchTodayVisits();
         });
+
+        // ===== 今日访问量 =====
+        async function fetchTodayVisits() {
+            const el = document.getElementById('today-visit-count');
+            if (!el) return;
+            try {
+                const res = await fetch('/api/stats', { cache: 'no-store' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                el.textContent = (typeof data.today === 'number') ? data.today : '--';
+            } catch (e) {
+                console.warn('获取今日访问量失败:', e);
+                el.textContent = '--';
+            }
+        }
+        setInterval(fetchTodayVisits, 30000);
 
         function normalizeGpuData(raw) {
             if (Array.isArray(raw)) return raw;
@@ -2293,15 +3620,15 @@
         function renderServerShortcuts(servers) {
             const renderTarget = (containerId, isMobile) => {
                 const container = document.getElementById(containerId);
-                if(!container) return;
+                if (!container) return;
                 container.innerHTML = '';
                 const allBtn = document.createElement('button');
                 allBtn.type = 'button';
                 allBtn.className = 'panel-btn' + (selectedServer === null ? ' active' : '');
                 allBtn.innerHTML = `<i class="fas fa-layer-group"></i><span class="panel-btn-name">All Servers</span><span class="server-status-dot all-status"></span>`;
                 allBtn.title = 'Show all servers';
-                if(!isMobile) {
-                    allBtn.addEventListener('mouseenter', function() {
+                if (!isMobile) {
+                    allBtn.addEventListener('mouseenter', function () {
                         highlightCards(Array.from(gpuCardMap.keys()));
                     });
                     allBtn.addEventListener('mouseleave', clearHighlights);
@@ -2331,8 +3658,8 @@
                     btn.dataset.hostname = hostname;
                     btn.title = `Show ${hostname}`;
                     btn.innerHTML = `<i class="fas fa-server"></i><span class="panel-btn-name">${escapeHtml(hostname)}</span><span class="server-status-dot unknown" data-status-host="${escapeHtml(hostname)}"></span>`;
-                    if(!isMobile) {
-                        btn.addEventListener('mouseenter', function() {
+                    if (!isMobile) {
+                        btn.addEventListener('mouseenter', function () {
                             const serverKeys = [];
                             for (const key of gpuCardMap.keys()) {
                                 if (key.startsWith(`${hostname}::`)) serverKeys.push(key);
@@ -2449,25 +3776,63 @@
 
         function extractGpuUsers(gpu) {
             if (!gpu) return [];
-            const raw = String(gpu.user_processes || gpu.users || '').trim();
-            if (!raw || raw === 'None' || raw === '-') return [];
+
+            const raw = String(
+                gpu.user_processes ?? gpu.users ?? ''
+            ).trim();
+
+            if (!raw) return [];
+            const lower = raw.toLowerCase();
+            if (lower === 'none' || lower === '-' || lower === 'n/a' || lower === 'na') return [];
+
             const users = [];
-            const matches = raw.matchAll(/([A-Za-z_][A-Za-z0-9_.-]*)\s*\(/g);
-            for (const match of matches) { if (!users.includes(match[1])) users.push(match[1]); }
-            if (users.length === 0) {
-                const parts = raw.split(/[\n;, \t]+/);
-                for (const part of parts) {
-                    if (part && /^[A-Za-z_][A-Za-z0-9_.-]*$/.test(part)) {
-                        if (!users.includes(part)) users.push(part);
-                    }
-                }
+            const seen = new Set();
+
+            const addUser = (name) => {
+                if (!name) return;
+                const u = String(name).trim();
+                if (!u) return;
+                // 过滤明显不是用户名的 token
+                if (/^\d+$/.test(u)) return;                       // 纯数字（PID 等）
+                if (/^(pid|gpu|gpus|mem|memory|cpu|cmd|command)$/i.test(u)) return;
+                if (u.length > 64) return;
+                // 用户名合法字符：字母数字 . _ -
+                if (!/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(u)) return;
+                if (seen.has(u)) return;
+                seen.add(u);
+                users.push(u);
+            };
+
+            // 1) 优先匹配 "username(...)" 形式（原有逻辑，兼容 gpustat）
+            const parenMatches = raw.matchAll(/([A-Za-z_][A-Za-z0-9_.-]*)\s*\(/g);
+            let parenFound = false;
+            for (const m of parenMatches) {
+                parenFound = true;
+                addUser(m[1]);
             }
+            if (parenFound && users.length > 0) return users;
+
+            // 2) 按行解析：每行取第一个 token 作为用户名
+            raw.split(/\r?\n/).forEach(line => {
+                const cleaned = line.trim();
+                if (!cleaned) return;
+                const stripped = cleaned.replace(/^[\s\-*•>]+/, '');
+                const head = stripped.split(/[:：]/, 1)[0].trim();
+                const tokens = head.split(/\s+/).filter(Boolean);
+                if (tokens.length === 0) return;
+                addUser(tokens[0]);
+                tokens.forEach(t => addUser(t));
+            });
+
+            // 3) 兜底：按常见分隔符拆分整体字符串
+            if (users.length === 0) {
+                raw.split(/[\n,;|/\t ]+/).forEach(t => addUser(t));
+            }
+
             return users;
         }
 
         // Single source of truth for Free GPU state.
-        // Important: never recurse here. The previous fallback could call
-        // isGpuFree() again for an unrecognised process string and lock the UI.
         function isGpuFree(gpu) {
             if (!gpu) return false;
 
@@ -2479,7 +3844,6 @@
                 'no users', 'no processes', 'no running processes'
             ]);
 
-            // A parsed username/process always means the GPU is occupied.
             if (extractGpuUsers(gpu).length > 0) return false;
 
             const usersText = normalize(rawUsers);
@@ -2489,19 +3853,11 @@
             const usersZero = usersText === '0';
             const processZero = processText === '0';
 
-            // No process fields at all: treat the GPU as free (the normal
-            // gpustat payload may omit both fields).
             if (rawUsers === undefined && rawProcesses === undefined) return true;
-
-            // Empty/placeholder fields or explicit zero both mean idle.
             if ((usersEmpty || usersZero) && (processEmpty || processZero)) return true;
-
-            // One side may be omitted while the other explicitly says zero.
             if (rawProcesses === undefined && (usersEmpty || usersZero)) return true;
             if (rawUsers === undefined && (processEmpty || processZero)) return true;
 
-            // Unknown non-empty text (for example "Connection Error") is not
-            // considered a free GPU. This prevents false-positive shortcuts.
             return false;
         }
 
@@ -2602,8 +3958,6 @@
                     freeCard.title = `Show all ${globalFree} available GPUs`;
                 }
 
-                // Keep the shortcut stateful even when the current free count is 0.
-                // This prevents an old selection from getting stuck after GPUs become busy.
                 if (!isMobile) {
                     freeCard.addEventListener('mouseenter', () => {
                         if (globalFreeKeys.length) highlightCards(globalFreeKeys);
@@ -2733,7 +4087,7 @@
                         </span>
                         <span class="count-pill pill-user">${uniqueGpus.length}</span>`;
                     userBtn.title = `Show ${username} GPUs`;
-                    if(!isMobile) {
+                    if (!isMobile) {
                         const userKeys = uniqueGpus.map(gpu => `${gpu.hostname}::${gpu.index}`);
                         userBtn.addEventListener('mouseenter', () => highlightCards(userKeys));
                         userBtn.addEventListener('mouseleave', clearHighlights);
@@ -2742,7 +4096,7 @@
                         if (selectedUser === username) selectedUser = null;
                         else { selectedUser = username; selectedServer = null; selectedFreeModel = null; }
                         updateAllActiveStates(); fetchData();
-                        if(isMobile) closeMobileOffcanvas();
+                        if (isMobile) closeMobileOffcanvas();
                     });
                     container.appendChild(userBtn);
                 });
@@ -3078,7 +4432,7 @@
                     handle: '.handle',
                     animation: 150,
                     ghostClass: 'sortable-ghost',
-                    onChange: function() {
+                    onChange: function () {
                         const rows = document.querySelectorAll('#server-list-body tr');
                         const hostnames = Array.from(rows).map(row => row.getAttribute('data-host')).filter(Boolean);
                         reorderGpuCardsByHostnames(hostnames);
@@ -3239,9 +4593,10 @@
 
         function applyTheme(theme) {
             const isLight = (theme === 'light');
-            try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+            try { localStorage.setItem(THEME_KEY, theme); } catch (e) { }
 
             document.documentElement.classList.toggle('light-mode', isLight);
+            document.documentElement.style.colorScheme = isLight ? 'light' : 'dark';
             if (document.body) {
                 document.body.classList.toggle('light-mode', isLight);
                 document.body.classList.toggle('bg-dark', !isLight);
@@ -3256,4 +4611,5 @@
         }
     </script>
 </body>
+
 </html>
