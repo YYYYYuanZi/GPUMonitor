@@ -9,6 +9,10 @@
 
 ## 📝 更新日志
 
+* **2026-11-23**：
+
+  * 发布 **v1.0.0** 多架构 Docker 镜像（`linux/amd64` + `linux/arm64`），`latest` 与 `v1.0.0` 指向同一版本。
+
 * **2026-10-05**：
 
   * 重构前端 UI，新增**亮色 / 暗黑模式切换**。
@@ -76,19 +80,32 @@
 ### 方式一：Docker 一键部署（推荐）
 
 ```bash
-docker pull yyyyyyyz/gpumonitor:latest
+# 推荐按版本拉取（多架构 manifest，自动选择 amd64 / arm64）
+docker pull yyyyyyyz/gpumonitor:v1.0.0
+
+# 或使用滚动最新标签（当前与 v1.0.0 指向同一镜像）
+# docker pull yyyyyyyz/gpumonitor:latest
 
 docker run -d \
   --name gpumonitor \
   --restart always \
   -p 8888:8888 \
   -e TZ=Asia/Shanghai \
-  yyyyyyyz/gpumonitor:latest
+  yyyyyyyz/gpumonitor:v1.0.0
 ```
 
 启动后访问：
 
 **http://localhost:8888**
+
+**可用镜像标签：**
+
+| 标签 | 说明 |
+| --- | --- |
+| `v1.0.0` | 推荐使用的版本化多架构镜像 |
+| `latest` | 滚动最新标签，当前与 `v1.0.0` 完全一致 |
+| `v1.0.0-amd64` / `v1.0.0-arm64` | 固定版本的单架构镜像 |
+| `amd64` / `arm64` | 单架构别名 |
 
 ---
 
